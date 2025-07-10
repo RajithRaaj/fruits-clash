@@ -6,6 +6,7 @@
     <title>Merge Fruits</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script> <!-- Tone.js for sound effects -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body {
@@ -17,6 +18,10 @@
             min-height: 100vh;
             margin: 0;
             overflow: hidden; /* Prevent body scroll */
+            -webkit-user-select: none; /* Disable text selection on iOS */
+            -moz-user-select: none; /* Disable text selection on Firefox */
+            -ms-user-select: none; /* Disable text selection on IE/Edge */
+            user-select: none; /* Standard disable text selection */
         }
         .game-container {
             position: relative;
@@ -28,15 +33,19 @@
             flex-direction: column;
             align-items: center;
             padding: 20px;
-            max-width: 90vw; /* Responsive width */
-            max-height: 90vh; /* Responsive height */
+            width: 100%; /* Take full width on small screens */
+            max-width: 400px; /* Max width for desktop */
+            height: 100%; /* Take full height on small screens */
+            max-height: 700px; /* Max height for desktop */
             box-sizing: border-box;
         }
         canvas {
             background-color: #e2e8f0; /* Light gray for canvas background */
             border-radius: 8px; /* Rounded corners for canvas */
             display: block;
-            touch-action: none; /* Prevent default touch actions like scrolling */
+            touch-action: none; /* Prevent default touch actions like scrolling/zooming */
+            width: 100%; /* Canvas fills container width */
+            height: 100%; /* Canvas fills container height */
         }
         .score-board {
             position: absolute;
@@ -120,24 +129,31 @@
         }
         .drop-indicator-fruit {
             position: absolute;
-            top: -50px; /* Initially off-screen */
-            left: 50%;
+            top: 0; /* Positioned relative to drop line */
             transform: translateX(-50%);
             border-radius: 50%;
             opacity: 0.7;
             pointer-events: none;
             z-index: 6;
-            transition: top 0.1s ease-out; /* Smooth transition for indicator */
+            transition: left 0.05s linear; /* Smooth transition for indicator */
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
-        .drop-zone-line {
+        .drop-indicator-fruit span {
+            display: block;
+            text-align: center;
+            line-height: 1; /* Adjust line-height to center emoji vertically */
+        }
+        .game-over-line {
             position: absolute;
-            top: 100px; /* Line where fruits will be dropped from */
-            left: 50%;
-            transform: translateX(-50%);
-            width: calc(100% - 40px); /* Adjust based on padding */
+            top: 0; /* Will be set by JS */
+            left: 20px; /* Aligned with canvas padding */
+            width: calc(100% - 40px); /* Aligned with canvas padding */
             height: 2px;
-            background-color: #cbd5e0; /* Light gray line */
-            z-index: 5;
+            background-color: #ef4444; /* Red line */
+            z-index: 7;
+            pointer-events: none;
         }
     </style>
 </head>
@@ -148,6 +164,7 @@
         <canvas id="gameCanvas"></canvas>
         <div class="drop-line" id="dropLine"></div>
         <div class="drop-indicator-fruit" id="dropIndicatorFruit"></div>
+        <div class="game-over-line" id="gameOverLine"></div> <!-- Game Over Visual Line -->
         <div class="game-over-overlay" id="gameOverOverlay">
             Game Over!
             <button class="restart-button" id="restartButton">Restart</button>
@@ -164,33 +181,40 @@
               Events = Matter.Events;
 
         // Game configuration
-        const CANVAS_WIDTH = 360; // Standard mobile width
-        const CANVAS_HEIGHT = 600; // Standard mobile height
+        const BASE_CANVAS_WIDTH = 360; // Reference width for fruit scaling
+        const BASE_CANVAS_HEIGHT = 600; // Reference height for fruit scaling
         const WALL_THICKNESS = 20;
-        const FRUIT_DROP_Y = 100; // Y-coordinate where fruits are dropped from
-        const GAME_OVER_Y = 80; // If fruit center goes above this line, game over
+        const FRUIT_DROP_Y_RATIO = 0.25; // Increased Y-coordinate for drop to prevent immediate game over
+        const GAME_OVER_Y_RATIO = 0.1; // If fruit center goes above this line (relative to canvas height), game over
+
         const FRUIT_TYPES = [
-            { name: "Cherry", radius: 15, color: "#ef4444", value: 10 },    // Red
-            { name: "Strawberry", radius: 20, color: "#f43f5e", value: 20 }, // Pinkish Red
-            { name: "Grape", radius: 25, color: "#8b5cf6", value: 30 },     // Purple
-            { name: "Dekopon", radius: 30, color: "#fb923c", value: 40 },   // Orange
-            { name: "Orange", radius: 35, color: "#f97316", value: 50 },    // Darker Orange
-            { name: "Apple", radius: 40, color: "#dc2626", value: 60 },     // Dark Red
-            { name: "Pear", radius: 45, color: "#a3e635", value: 70 },      // Light Green
-            { name: "Peach", radius: 50, color: "#fca5a5", value: 80 },     // Light Pink
-            { name: "Pineapple", radius: 55, color: "#facc15", value: 90 }, // Yellow
-            { name: "Melon", radius: 60, color: "#22c55e", value: 100 },    // Green
-            { name: "Watermelon", radius: 65, color: "#be123c", value: 110 } // Dark Green with Red
+            { name: "Cherry", radius: 15, color: "#ef4444", value: 10, emoji: "🍒" },
+            { name: "Strawberry", radius: 20, color: "#f43f5e", value: 20, emoji: "🍓" },
+            { name: "Grape", radius: 25, color: "#8b5cf6", value: 30, emoji: "🍇" },
+            { name: "Dekopon", radius: 30, color: "#fb923c", value: 40, emoji: "🍊" },
+            { name: "Orange", radius: 35, color: "#f97316", value: 50, emoji: "🍊" },
+            { name: "Apple", radius: 40, color: "#dc2626", value: 60, emoji: "🍎" },
+            { name: "Pear", radius: 45, color: "#a3e635", value: 70, emoji: "🍐" },
+            { name: "Peach", radius: 50, color: "#fca5a5", value: 80, emoji: "🍑" },
+            { name: "Pineapple", radius: 55, color: "#facc15", value: 90, emoji: "🍍" },
+            { name: "Melon", radius: 60, color: "#22c55e", value: 100, emoji: "🍈" },
+            { name: "Watermelon", radius: 65, color: "#be123c", value: 110, emoji: "🍉" }
         ];
 
         let engine;
         let render;
         let runner;
-        let currentFruit = null;
         let nextFruitTypeIndex = 0;
         let score = 0;
         let isGameOver = false;
         let isDropping = false; // To prevent multiple drops while one is in progress
+        let currentCanvasWidth;
+        let currentCanvasHeight;
+
+        // Tone.js Synths for sound effects
+        let dropSynth;
+        let mergeSynth;
+        let gameOverSynth;
 
         // DOM elements
         const gameCanvas = document.getElementById('gameCanvas');
@@ -201,29 +225,28 @@
         const dropLine = document.getElementById('dropLine');
         const dropIndicatorFruit = document.getElementById('dropIndicatorFruit');
         const gameContainer = document.querySelector('.game-container');
+        const gameOverLine = document.getElementById('gameOverLine');
+
+        // Function to get the current scaled fruit radius
+        function getScaledFruitRadius(index) {
+            const baseRadius = FRUIT_TYPES[index].radius;
+            // Scale radius based on current canvas width relative to base width
+            return baseRadius * (currentCanvasWidth / BASE_CANVAS_WIDTH);
+        }
 
         // Adjust canvas size for responsiveness
         function adjustCanvasSize() {
-            const containerWidth = gameContainer.clientWidth - 40; // Account for padding
-            const containerHeight = gameContainer.clientHeight - 40; // Account for padding
+            // Set canvas dimensions to match its CSS-controlled size
+            currentCanvasWidth = gameCanvas.clientWidth;
+            currentCanvasHeight = gameCanvas.clientHeight;
 
-            // Maintain aspect ratio or fit within container
-            const aspectRatio = CANVAS_WIDTH / CANVAS_HEIGHT;
-            let newWidth = containerWidth;
-            let newHeight = containerWidth / aspectRatio;
-
-            if (newHeight > containerHeight) {
-                newHeight = containerHeight;
-                newWidth = containerHeight * aspectRatio;
-            }
-
-            gameCanvas.width = newWidth;
-            gameCanvas.height = newHeight;
+            gameCanvas.width = currentCanvasWidth;
+            gameCanvas.height = currentCanvasHeight;
 
             // Update Matter.js renderer dimensions
             if (render) {
-                render.options.width = newWidth;
-                render.options.height = newHeight;
+                render.options.width = currentCanvasWidth;
+                render.options.height = currentCanvasHeight;
                 Render.setPixelRatio(render, window.devicePixelRatio || 1);
             }
 
@@ -231,10 +254,72 @@
             if (engine && engine.world.bodies.length > 0) {
                 updateWalls();
             }
+
+            // Update drop indicator position based on new canvas size
+            updateDropIndicator();
+
+            // Update game over line position
+            const gameOverLineY = currentCanvasHeight * GAME_OVER_Y_RATIO;
+            gameOverLine.style.top = `${gameOverLineY}px`;
         }
+
+        // Initialize Tone.js synths
+        function initAudio() {
+            // Drop sound: Plucky, short tone
+            dropSynth = new Tone.PolySynth(Tone.Synth, {
+                oscillator: {
+                    type: "triangle"
+                },
+                envelope: {
+                    attack: 0.005,
+                    decay: 0.1,
+                    sustain: 0.05,
+                    release: 0.1
+                }
+            }).toDestination();
+
+            // Merge sound: Warmer, slightly longer tone
+            mergeSynth = new Tone.Synth({
+                oscillator: {
+                    type: "sine"
+                },
+                envelope: {
+                    attack: 0.01,
+                    decay: 0.2,
+                    sustain: 0.1,
+                    release: 0.2
+                }
+            }).toDestination();
+
+            // Game Over sound: Lower, more dissonant tone
+            gameOverSynth = new Tone.Synth({
+                oscillator: {
+                    type: "sawtooth"
+                },
+                envelope: {
+                    attack: 0.05,
+                    decay: 0.5,
+                    sustain: 0.2,
+                    release: 0.8
+                }
+            }).toDestination();
+        }
+
 
         // Initialize game
         function initGame() {
+            // Stop and clear previous engine/runner if they exist
+            if (runner) {
+                Runner.stop(runner);
+            }
+            if (engine) {
+                // Remove existing Matter.js event listeners from the old engine instance
+                Events.off(engine, 'collisionStart', handleCollision);
+                Events.off(engine, 'afterUpdate', checkGameOver);
+                // Clear engine's world
+                Engine.clear(engine);
+            }
+
             // Reset game state
             score = 0;
             isGameOver = false;
@@ -242,13 +327,17 @@
             scoreElement.textContent = score;
             gameOverOverlay.classList.remove('visible');
 
-            // Create an engine
+            // Create a new engine
             engine = Engine.create();
             engine.gravity.y = 1; // Standard gravity
 
-            // Create a renderer
+            // Create a new renderer, linking to the existing canvas element
+            // If render already exists, stop it before creating a new one
+            if (render) {
+                Render.stop(render);
+            }
             render = Render.create({
-                canvas: gameCanvas,
+                canvas: gameCanvas, // Use the existing canvas element
                 engine: engine,
                 options: {
                     width: gameCanvas.width,
@@ -259,7 +348,7 @@
                 }
             });
 
-            // Create runner
+            // Create new runner
             runner = Runner.create();
 
             // Add walls and floor
@@ -273,10 +362,10 @@
             generateNextFruit();
             updateDropIndicator();
 
-            // Add event listeners
+            // Add DOM event listeners
             addEventListeners();
 
-            // Add collision event listener
+            // Add Matter.js engine event listeners to the NEW engine
             Events.on(engine, 'collisionStart', handleCollision);
             Events.on(engine, 'afterUpdate', checkGameOver);
         }
@@ -316,10 +405,12 @@
         // Generate a random fruit for the next drop
         function generateNextFruit() {
             // For the first few drops, ensure smaller fruits
-            if (engine.world.bodies.filter(b => b.label === 'fruit').length < 5) {
+            const currentFruitCount = Composite.allBodies(engine.world).filter(b => b.label === 'fruit').length;
+            if (currentFruitCount < 5) {
                 nextFruitTypeIndex = Math.floor(Math.random() * 3); // Cherry, Strawberry, Grape
             } else {
-                nextFruitTypeIndex = Math.floor(Math.random() * (FRUIT_TYPES.length / 3)); // Random from smaller fruits
+                // Random from a wider range, but still favoring smaller ones
+                nextFruitTypeIndex = Math.floor(Math.random() * Math.min(FRUIT_TYPES.length, 5));
             }
             nextFruitNameElement.textContent = FRUIT_TYPES[nextFruitTypeIndex].name;
             updateDropIndicator();
@@ -328,9 +419,13 @@
         // Update the visual indicator for the next fruit to drop
         function updateDropIndicator() {
             const fruitType = FRUIT_TYPES[nextFruitTypeIndex];
-            dropIndicatorFruit.style.width = `${fruitType.radius * 2}px`;
-            dropIndicatorFruit.style.height = `${fruitType.radius * 2}px`;
+            const scaledRadius = getScaledFruitRadius(nextFruitTypeIndex);
+            dropIndicatorFruit.style.width = `${scaledRadius * 2}px`;
+            dropIndicatorFruit.style.height = `${scaledRadius * 2}px`;
             dropIndicatorFruit.style.backgroundColor = fruitType.color;
+            dropIndicatorFruit.innerHTML = `<span style="font-size: ${scaledRadius * 1.2}px; line-height: ${scaledRadius * 2}px;">${fruitType.emoji}</span>`; // Add emoji
+            // Position it at the drop Y, adjusted by radius
+            dropIndicatorFruit.style.top = `${currentCanvasHeight * FRUIT_DROP_Y_RATIO - scaledRadius}px`;
         }
 
         // Drop a fruit at the given x-coordinate
@@ -339,12 +434,16 @@
 
             isDropping = true;
             const fruitType = FRUIT_TYPES[nextFruitTypeIndex];
-            const fruitRadius = fruitType.radius;
+            const scaledRadius = getScaledFruitRadius(nextFruitTypeIndex);
             const fruitColor = fruitType.color;
             const fruitValue = fruitType.value;
 
+            // Ensure fruit drops within horizontal bounds
+            const dropX = Math.max(scaledRadius, Math.min(currentCanvasWidth - scaledRadius, x));
+            const dropY = currentCanvasHeight * FRUIT_DROP_Y_RATIO;
+
             // Create a new fruit body
-            const fruit = Bodies.circle(x, FRUIT_DROP_Y, fruitRadius, {
+            const fruit = Bodies.circle(dropX, dropY, scaledRadius, {
                 restitution: 0.3, // Bounciness
                 friction: 0.5,    // Friction
                 density: 0.001,   // Weight
@@ -360,7 +459,11 @@
             });
 
             Composite.add(engine.world, fruit);
-            currentFruit = fruit; // Keep track of the fruit being dropped
+
+            // Play drop sound
+            if (dropSynth) {
+                dropSynth.triggerAttackRelease("C4", "8n");
+            }
 
             // After a short delay, allow next drop
             setTimeout(() => {
@@ -397,7 +500,7 @@
                     // Calculate new fruit properties
                     const newFruitTypeIndex = bodyA.fruitTypeIndex + 1;
                     const newFruitType = FRUIT_TYPES[newFruitTypeIndex];
-                    const newFruitRadius = newFruitType.radius;
+                    const newScaledRadius = getScaledFruitRadius(newFruitTypeIndex);
                     const newFruitColor = newFruitType.color;
                     const newFruitValue = newFruitType.value;
 
@@ -406,7 +509,7 @@
                     const newY = (bodyA.position.y + bodyB.position.y) / 2;
 
                     // Create the new, larger fruit
-                    const newFruit = Bodies.circle(newX, newY, newFruitRadius, {
+                    const newFruit = Bodies.circle(newX, newY, newScaledRadius, {
                         restitution: 0.3,
                         friction: 0.5,
                         density: 0.001,
@@ -420,6 +523,11 @@
 
                     Composite.add(engine.world, newFruit);
 
+                    // Play merge sound
+                    if (mergeSynth) {
+                        mergeSynth.triggerAttackRelease("E5", "4n");
+                    }
+
                     // Update score
                     score += newFruitValue;
                     scoreElement.textContent = score;
@@ -432,9 +540,11 @@
             if (isGameOver) return;
 
             const fruits = Composite.allBodies(engine.world).filter(body => body.label === 'fruit');
+            const gameOverLineY = currentCanvasHeight * GAME_OVER_Y_RATIO;
+
             for (const fruit of fruits) {
-                // If the center of any fruit goes above the game over line
-                if (fruit.position.y - fruit.circleRadius < GAME_OVER_Y) {
+                // If the top of any fruit goes above the game over line
+                if (fruit.position.y - fruit.circleRadius < gameOverLineY) {
                     endGame();
                     break;
                 }
@@ -447,6 +557,10 @@
             Runner.stop(runner);
             gameOverOverlay.classList.add('visible');
             removeEventListeners();
+            // Play game over sound
+            if (gameOverSynth) {
+                gameOverSynth.triggerAttackRelease("C3", "1s");
+            }
         }
 
         // Restart the game
@@ -462,23 +576,28 @@
             const rect = gameCanvas.getBoundingClientRect();
             let x = clientX - rect.left; // X position relative to canvas
 
-            // Clamp x to canvas boundaries, considering fruit radius
-            const fruitRadius = FRUIT_TYPES[nextFruitTypeIndex].radius;
-            x = Math.max(fruitRadius, Math.min(gameCanvas.width - fruitRadius, x));
+            // Clamp x to canvas boundaries, considering scaled fruit radius
+            const scaledRadius = getScaledFruitRadius(nextFruitTypeIndex);
+            x = Math.max(scaledRadius, Math.min(currentCanvasWidth - scaledRadius, x));
 
-            dropLine.style.left = `${x / gameCanvas.width * 100}%`;
-            dropIndicatorFruit.style.left = `${x / gameCanvas.width * 100}%`;
-            dropIndicatorFruit.style.top = `${FRUIT_DROP_Y - fruitRadius}px`; // Position above drop line
+            dropLine.style.left = `${x / currentCanvasWidth * 100}%`;
+            dropIndicatorFruit.style.left = `${x / currentCanvasWidth * 100}%`;
         };
 
         const handlePointerMove = (e) => {
             if (isGameOver) return;
+            e.preventDefault(); // Prevent scrolling on touch devices
             const clientX = e.touches ? e.touches[0].clientX : e.clientX;
             updateDropPosition(clientX);
         };
 
         const handlePointerDown = (e) => {
             if (isGameOver) return;
+            e.preventDefault(); // Prevent default touch behavior (e.g., long press context menu)
+            // Initialize Tone.js context on first user interaction
+            if (Tone.context.state !== 'running') {
+                Tone.start();
+            }
             const clientX = e.touches ? e.touches[0].clientX : e.clientX;
             const rect = gameCanvas.getBoundingClientRect();
             const dropX = clientX - rect.left;
@@ -505,6 +624,7 @@
 
         // Initial setup on window load
         window.onload = function() {
+            initAudio(); // Initialize audio context and synths
             adjustCanvasSize(); // Set initial canvas size
             initGame(); // Initialize the game
             window.addEventListener('resize', () => {
@@ -515,4 +635,3 @@
     </script>
 </body>
 </html>
-
