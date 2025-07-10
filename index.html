@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fruit Clash Merge</title>
+    <!-- Tailwind CSS CDN for responsive styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0fdf4; /* Light green background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden; /* Prevent scrolling */
+        }
+        .game-container {
+            background-color: #ffffff;
+            border-radius: 1.5rem; /* Rounded corners */
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            max-width: 90vw; /* Responsive width */
+            max-height: 95vh; /* Responsive height */
+            box-sizing: border-box;
+            position: relative;
+        }
+        canvas {
+            background-color: #a7f3d0; /* Lighter green for board */
+            border-radius: 0.75rem;
+            border: 4px solid #34d399; /* Green border */
+            touch-action: none; /* Prevent default touch actions like scrolling/zooming */
+            display: block; /* Remove extra space below canvas */
+            max-width: 100%; /* Ensure canvas fits container */
+            height: auto; /* Maintain aspect ratio */
+        }
+        .game-info {
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 1rem 0;
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: #10b981; /* Green text */
+        }
+        .next-fruit-display {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1rem;
+            color: #34d399;
+        }
+        .next-fruit-emoji {
+            font-size: 2rem; /* Larger emoji for next fruit */
+            line-height: 1; /* Remove extra line height */
+        }
+        .game-over-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 2rem;
+            font-weight: bold;
+            border-radius: 1.5rem;
+            z-index: 10;
+            text-align: center;
+        }
+        .game-over-overlay button {
+            margin-top: 1.5rem;
+            padding: 0.75rem 2rem;
+            background-color: #34d399; /* Green button */
+            color: white;
+            border: none;
+            border-radius: 0.75rem;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .game-over-overlay button:hover {
+            background-color: #10b981; /* Darker green on hover */
+            transform: translateY(-2px);
+        }
+        .game-over-overlay button:active {
+            transform: translateY(0);
+            box-shadow: none;
+        }
+        .drop-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: rgba(255, 0, 0, 0.5); /* Red line for game over */
+            z-index: 5;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-green-100 to-lime-100">
+    <div id="gameContainer" class="game-container">
+        <div class="game-info">
+            <div id="scoreDisplay">Score: 0</div>
+            <div class="next-fruit-display">Next: <span id="nextFruitEmoji" class="next-fruit-emoji"></span></div>
+        </div>
+        <canvas id="gameCanvas"></canvas>
+
+        <!-- Game Over Overlay -->
+        <div id="gameOverOverlay" class="game-over-overlay hidden">
+            <p id="gameOverMessage"></p>
+            <button id="retryButton">Play Again</button>
+        </div>
+    </div>
+
+    <!-- Audio Elements -->
+    <audio id="bgMusic" loop>
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-game-level-opened-2042.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+    <audio id="dropSound">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-quick-thud-2849.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+    <audio id="mergeSound">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-game-bling-2070.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+    <audio id="gameOverSound">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-arcade-retro-game-over-213.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+    <audio id="winSound">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-small-fanfare-melody-2882.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+
+    <script>
+        // Get canvas and context
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Game constants
+        const BOARD_WIDTH = 400; // Fixed width for the game area
+        const BOARD_HEIGHT = 600; // Fixed height for the game area
+        const GRAVITY = 0.5; // Pixels per frame per frame
+        const BOUNCE_FACTOR = 0.7; // How much velocity is retained after bounce
+        const FRICTION = 0.9; // Horizontal friction
+        const MERGE_THRESHOLD_VELOCITY = 0.5; // Max velocity for fruits to be considered "settled" for merging
+        const MERGE_DELAY = 200; // Milliseconds to wait before processing merges
+        const GAME_OVER_LINE_Y_RATIO = 0.15; // Percentage from top for game over line
+
+        // Fruit progression: emoji, radius, base score
+        const FRUIT_SPECS = [
+            { emoji: '🍒', radius: 15, score: 10 }, // Cherry
+            { emoji: '🍓', radius: 20, score: 20 }, // Strawberry
+            { emoji: '🍇', radius: 25, score: 40 }, // Grape
+            { emoji: '🍊', radius: 30, score: 80 }, // Orange
+            { emoji: '🍎', radius: 35, score: 160 }, // Apple
+            { emoji: '🍍', radius: 40, score: 320 }, // Pineapple
+            { emoji: '🍈', radius: 45, score: 640 }, // Melon
+            { emoji: '🍉', radius: 50, score: 1280 } // Watermelon (Goal)
+        ];
+
+        let fruits = []; // Array to hold all active fruit objects
+        let score = 0;
+        let gameOver = false;
+        let currentDroppingFruit = null; // The fruit currently controlled by the player
+        let nextFruitTypeIndex = 0; // Index for the next fruit to drop
+        let isDropping = false; // Flag to prevent dropping multiple fruits at once
+        let mergeQueue = []; // Queue for fruits to be merged
+
+        // Audio elements
+        const bgMusic = document.getElementById('bgMusic');
+        const dropSound = document.getElementById('dropSound');
+        const mergeSound = document.getElementById('mergeSound');
+        const gameOverSound = document.getElementById('gameOverSound');
+        const winSound = document.getElementById('winSound');
+
+        // UI elements
+        const scoreDisplay = document.getElementById('scoreDisplay');
+        const nextFruitEmoji = document.getElementById('nextFruitEmoji');
+        const gameOverOverlay = document.getElementById('gameOverOverlay');
+        const gameOverMessage = document.getElementById('gameOverMessage');
+        const retryButton = document.getElementById('retryButton');
+
+        // Game over line visual
+        let gameOverLineY = 0;
+
+        /**
+         * Fruit class to manage individual fruit properties and behavior.
+         */
+        class Fruit {
+            constructor(x, y, typeIndex) {
+                this.typeIndex = typeIndex;
+                this.emoji = FRUIT_SPECS[typeIndex].emoji;
+                this.radius = FRUIT_SPECS[typeIndex].radius;
+                this.scoreValue = FRUIT_SPECS[typeIndex].score;
+                this.x = x;
+                this.y = y;
+                this.vx = 0; // Velocity X
+                this.vy = 0; // Velocity Y
+                this.isFalling = true; // True if it's currently being dropped or falling
+                this.merged = false; // Flag to mark if this fruit is part of a merge
+            }
+
+            /**
+             * Draws the fruit on the canvas.
+             */
+            draw() {
+                ctx.font = `${this.radius * 1.5}px Arial`; // Adjust font size based on radius
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(this.emoji, this.x, this.y);
+            }
+
+            /**
+             * Updates the fruit's position based on physics.
+             */
+            update() {
+                if (!this.isFalling) return;
+
+                this.vy += GRAVITY; // Apply gravity
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Apply friction to horizontal velocity
+                this.vx *= FRICTION;
+
+                // Collision with bottom wall
+                if (this.y + this.radius > canvas.height) {
+                    this.y = canvas.height - this.radius;
+                    this.vy *= -BOUNCE_FACTOR;
+                    this.vx *= FRICTION; // More friction on ground contact
+                    if (Math.abs(this.vy) < MERGE_THRESHOLD_VELOCITY) this.isFalling = false; // Settle if nearly still
+                }
+
+                // Collision with left wall
+                if (this.x - this.radius < 0) {
+                    this.x = this.radius;
+                    this.vx *= -BOUNCE_FACTOR;
+                }
+                // Collision with right wall
+                if (this.x + this.radius > canvas.width) {
+                    this.x = canvas.width - this.radius;
+                    this.vx *= -BOUNCE_FACTOR;
+                }
+
+                // Check if fruit is settled (low velocity)
+                if (Math.abs(this.vy) < MERGE_THRESHOLD_VELOCITY && Math.abs(this.vx) < MERGE_THRESHOLD_VELOCITY && this.y + this.radius >= canvas.height) {
+                    this.isFalling = false;
+                }
+            }
+        }
+
+        /**
+         * Calculates canvas dimensions and game over line based on container.
+         */
+        function calculateCanvasSize() {
+            const container = document.getElementById('gameContainer');
+            // Set canvas to a fixed aspect ratio or max-width/height for mobile
+            // For this game, we'll use fixed dimensions and let CSS handle scaling.
+            canvas.width = BOARD_WIDTH;
+            canvas.height = BOARD_HEIGHT;
+            gameOverLineY = canvas.height * GAME_OVER_LINE_Y_RATIO;
+        }
+
+        /**
+         * Initializes the game state.
+         */
+        function initializeGame() {
+            fruits = [];
+            score = 0;
+            gameOver = false;
+            isDropping = false;
+            mergeQueue = [];
+            currentDroppingFruit = null;
+            nextFruitTypeIndex = Math.floor(Math.random() * (FRUIT_SPECS.length - 2)); // Start with smaller fruits
+
+            updateUI();
+            generateNextFruit();
+            gameOverOverlay.classList.add('hidden');
+            bgMusic.currentTime = 0;
+            bgMusic.play().catch(e => console.log("Music auto-play prevented:", e));
+        }
+
+        /**
+         * Generates the next fruit to be dropped.
+         */
+        function generateNextFruit() {
+            // Ensure next fruit is always smaller than watermelon
+            nextFruitTypeIndex = Math.floor(Math.random() * (FRUIT_SPECS.length - 2));
+            nextFruitEmoji.textContent = FRUIT_SPECS[nextFruitTypeIndex].emoji;
+        }
+
+        /**
+         * Draws the game board, fruits, and game over line.
+         */
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas
+
+            // Draw game over line
+            ctx.beginPath();
+            ctx.moveTo(0, gameOverLineY);
+            ctx.lineTo(canvas.width, gameOverLineY);
+            ctx.strokeStyle = 'rgba(255, 0, 0, 0.5)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Draw fruits
+            fruits.forEach(fruit => fruit.draw());
+
+            // Draw the current dropping fruit (if any)
+            if (currentDroppingFruit) {
+                currentDroppingFruit.draw();
+            }
+        }
+
+        /**
+         * Updates game logic: physics, collisions, merges.
+         */
+        function update() {
+            if (gameOver) return;
+
+            // Update current dropping fruit's physics
+            if (currentDroppingFruit) {
+                currentDroppingFruit.update();
+                // If the dropping fruit has settled, add it to the main fruits array
+                if (!currentDroppingFruit.isFalling) {
+                    fruits.push(currentDroppingFruit);
+                    currentDroppingFruit = null;
+                    isDropping = false; // Allow next drop
+                    processMerges(); // Check for merges immediately after a fruit settles
+                }
+            }
+
+            // Update all active fruits' physics
+            fruits.forEach(fruit => fruit.update());
+
+            // Handle fruit-fruit collisions
+            for (let i = 0; i < fruits.length; i++) {
+                for (let j = i + 1; j < fruits.length; j++) {
+                    handleCollision(fruits[i], fruits[j]);
+                }
+            }
+
+            // Check for game over condition
+            checkGameOver();
+        }
+
+        /**
+         * Handles collision between two fruits.
+         * Basic elastic collision response.
+         * @param {Fruit} f1 - First fruit.
+         * @param {Fruit} f2 - Second fruit.
+         */
+        function handleCollision(f1, f2) {
+            const dx = f2.x - f1.x;
+            const dy = f2.y - f1.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            const minDistance = f1.radius + f2.radius;
+
+            if (distance < minDistance) {
+                // Overlap detected, resolve overlap
+                const overlap = minDistance - distance;
+                const normalX = dx / distance;
+                const normalY = dy / distance;
+
+                // Move fruits apart to resolve overlap
+                const moveAmount = overlap / 2;
+                f1.x -= normalX * moveAmount;
+                f1.y -= normalY * moveAmount;
+                f2.x += normalX * moveAmount;
+                f2.y += normalY * moveAmount;
+
+                // Relative velocity
+                const rvX = f2.vx - f1.vx;
+                const rvY = f2.vy - f1.vy;
+
+                // Velocity along the normal
+                const velAlongNormal = rvX * normalX + rvY * normalY;
+
+                // Do not resolve if velocities are separating
+                if (velAlongNormal > 0) return;
+
+                // Calculate impulse
+                const impulse = -(1 + BOUNCE_FACTOR) * velAlongNormal / 2; // Assuming equal mass for simplicity
+
+                // Apply impulse
+                f1.vx -= impulse * normalX;
+                f1.vy -= impulse * normalY;
+                f2.vx += impulse * normalX;
+                f2.vy += impulse * normalY;
+
+                // Mark fruits as falling again if they collide
+                f1.isFalling = true;
+                f2.isFalling = true;
+
+                // Check for merge condition
+                if (f1.typeIndex === f2.typeIndex && !f1.merged && !f2.merged) {
+                    // Add to merge queue to prevent immediate merging during collision resolution
+                    mergeQueue.push([f1, f2]);
+                }
+            }
+        }
+
+        /**
+         * Processes the merge queue, creating new fruits and removing old ones.
+         */
+        function processMerges() {
+            const newFruits = [];
+            const mergedFruitsSet = new Set(); // Keep track of fruits that have been merged
+
+            // Filter out fruits that are already marked for merge
+            mergeQueue = mergeQueue.filter(([f1, f2]) => !f1.merged && !f2.merged);
+
+            // Sort merge queue by type index to prioritize larger merges (optional, but can prevent issues)
+            mergeQueue.sort((a, b) => a[0].typeIndex - b[0].typeIndex);
+
+            while (mergeQueue.length > 0) {
+                const [f1, f2] = mergeQueue.shift();
+
+                // Double check if they are still valid for merge
+                if (f1.merged || f2.merged || f1.typeIndex !== f2.typeIndex) continue;
+
+                // Check if they are close enough and settled
+                const dx = f2.x - f1.x;
+                const dy = f2.y - f1.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                const minDistance = f1.radius + f2.radius;
+
+                if (distance < minDistance * 1.5 && // Allow some distance for merge
+                    Math.abs(f1.vx) < MERGE_THRESHOLD_VELOCITY && Math.abs(f1.vy) < MERGE_THRESHOLD_VELOCITY &&
+                    Math.abs(f2.vx) < MERGE_THRESHOLD_VELOCITY && Math.abs(f2.vy) < MERGE_THRESHOLD_VELOCITY)
+                {
+                    f1.merged = true;
+                    f2.merged = true;
+                    mergedFruitsSet.add(f1);
+                    mergedFruitsSet.add(f2);
+                    mergeSound.play();
+
+                    const newTypeIndex = f1.typeIndex + 1;
+                    if (newTypeIndex < FRUIT_SPECS.length) {
+                        const newX = (f1.x + f2.x) / 2;
+                        const newY = (f1.y + f2.y) / 2;
+                        const newFruit = new Fruit(newX, newY, newTypeIndex);
+                        newFruit.isFalling = true; // New fruit starts falling
+                        newFruits.push(newFruit);
+                        score += newFruit.scoreValue;
+
+                        // If watermelon is created, it's a win!
+                        if (newFruit.emoji === '🍉') {
+                            triggerWin();
+                        }
+                    }
+                }
+            }
+
+            // Remove merged fruits from the main array
+            fruits = fruits.filter(fruit => !fruit.merged);
+            // Add newly created fruits
+            fruits.push(...newFruits);
+
+            // After merges, re-check for any new potential merges (cascading merges)
+            if (newFruits.length > 0) {
+                // Small delay before re-processing to allow new fruits to settle slightly
+                setTimeout(() => {
+                    for (let i = 0; i < fruits.length; i++) {
+                        for (let j = i + 1; j < fruits.length; j++) {
+                            if (fruits[i].typeIndex === fruits[j].typeIndex && !fruits[i].merged && !fruits[j].merged) {
+                                const dx = fruits[j].x - fruits[i].x;
+                                const dy = fruits[j].y - fruits[i].y;
+                                const distance = Math.sqrt(dx * dx + dy * dy);
+                                const minDistance = fruits[i].radius + fruits[j].radius;
+
+                                if (distance < minDistance * 1.5) { // Check proximity for potential merge
+                                    mergeQueue.push([fruits[i], fruits[j]]);
+                                }
+                            }
+                        }
+                    }
+                    if (mergeQueue.length > 0) processMerges(); // Recursively process new merges
+                }, MERGE_DELAY);
+            }
+            updateUI();
+        }
+
+
+        /**
+         * Main game loop.
+         */
+        function gameLoop() {
+            if (gameOver) return;
+
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        /**
+         * Updates the score and next fruit display.
+         */
+        function updateUI() {
+            scoreDisplay.textContent = `Score: ${score}`;
+        }
+
+        /**
+         * Handles input (click/touch) to drop a fruit.
+         * @param {Event} event - The touch or mouse event.
+         */
+        function handleInput(event) {
+            if (gameOver || isDropping) return;
+
+            event.preventDefault(); // Prevent default browser actions
+
+            let clientX;
+            if (event.type.startsWith('touch')) {
+                clientX = event.touches[0].clientX;
+            } else {
+                clientX = event.clientX;
+            }
+
+            const rect = canvas.getBoundingClientRect();
+            const xInCanvas = clientX - rect.left;
+
+            // Calculate the x position for the new fruit, clamped within canvas bounds
+            const fruitRadius = FRUIT_SPECS[nextFruitTypeIndex].radius;
+            let dropX = Math.max(fruitRadius, Math.min(canvas.width - fruitRadius, xInCanvas));
+
+            // Create and drop the new fruit
+            currentDroppingFruit = new Fruit(dropX, fruitRadius, nextFruitTypeIndex); // Start at top
+            currentDroppingFruit.vy = 1; // Give it a small initial downward push
+            isDropping = true;
+            dropSound.play();
+
+            // Prepare the next fruit
+            generateNextFruit();
+        }
+
+        /**
+         * Checks if the game is over (fruits piled up too high).
+         */
+        function checkGameOver() {
+            for (const fruit of fruits) {
+                if (fruit.y - fruit.radius < gameOverLineY) {
+                    triggerGameOver("Game Over! Fruits piled too high.");
+                    return;
+                }
+            }
+        }
+
+        /**
+         * Triggers the game over state.
+         * @param {string} message - The message to display on the game over screen.
+         */
+        function triggerGameOver(message) {
+            gameOver = true;
+            gameOverMessage.textContent = message;
+            gameOverOverlay.classList.remove('hidden');
+            bgMusic.pause();
+            gameOverSound.play();
+        }
+
+        /**
+         * Triggers the win state.
+         */
+        function triggerWin() {
+            gameOver = true;
+            gameOverMessage.textContent = "You Win! You created a Watermelon! 🎉";
+            gameOverOverlay.classList.remove('hidden');
+            bgMusic.pause();
+            winSound.play();
+        }
+
+        /**
+         * Resets the game to its initial state.
+         */
+        function resetGame() {
+            initializeGame();
+            gameLoop(); // Restart game loop
+        }
+
+        // Event Listeners
+        canvas.addEventListener('mousedown', handleInput);
+        canvas.addEventListener('touchstart', handleInput, { passive: false });
+        retryButton.addEventListener('click', resetGame);
+
+        // Handle window resize to adjust canvas size
+        window.addEventListener('resize', () => {
+            calculateCanvasSize();
+            draw(); // Redraw board on resize
+        });
+
+        // Initial game setup on window load
+        window.onload = function() {
+            calculateCanvasSize();
+            initializeGame();
+            gameLoop();
+            // Attempt to play music on first user interaction
+            canvas.addEventListener('click', () => {
+                if (bgMusic.paused) {
+                    bgMusic.play().catch(e => console.log("Music auto-play prevented:", e));
+                }
+            }, { once: true });
+            canvas.addEventListener('touchstart', () => {
+                if (bgMusic.paused) {
+                    bgMusic.play().catch(e => console.log("Music auto-play prevented:", e));
+                }
+            }, { once: true });
+        };
+    </script>
+</body>
+</html>
