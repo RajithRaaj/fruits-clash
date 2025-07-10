@@ -457,36 +457,36 @@
             initGame();
         }
 
+        // Mouse/Touch move to control drop line (moved to global scope)
+        const updateDropPosition = (clientX) => {
+            const rect = gameCanvas.getBoundingClientRect();
+            let x = clientX - rect.left; // X position relative to canvas
+
+            // Clamp x to canvas boundaries, considering fruit radius
+            const fruitRadius = FRUIT_TYPES[nextFruitTypeIndex].radius;
+            x = Math.max(fruitRadius, Math.min(gameCanvas.width - fruitRadius, x));
+
+            dropLine.style.left = `${x / gameCanvas.width * 100}%`;
+            dropIndicatorFruit.style.left = `${x / gameCanvas.width * 100}%`;
+            dropIndicatorFruit.style.top = `${FRUIT_DROP_Y - fruitRadius}px`; // Position above drop line
+        };
+
+        const handlePointerMove = (e) => {
+            if (isGameOver) return;
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            updateDropPosition(clientX);
+        };
+
+        const handlePointerDown = (e) => {
+            if (isGameOver) return;
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const rect = gameCanvas.getBoundingClientRect();
+            const dropX = clientX - rect.left;
+            dropFruit(dropX);
+        };
+
         // Add event listeners for dropping fruits and moving the drop line
         function addEventListeners() {
-            // Mouse/Touch move to control drop line
-            const updateDropPosition = (clientX) => {
-                const rect = gameCanvas.getBoundingClientRect();
-                let x = clientX - rect.left; // X position relative to canvas
-
-                // Clamp x to canvas boundaries, considering fruit radius
-                const fruitRadius = FRUIT_TYPES[nextFruitTypeIndex].radius;
-                x = Math.max(fruitRadius, Math.min(gameCanvas.width - fruitRadius, x));
-
-                dropLine.style.left = `${x / gameCanvas.width * 100}%`;
-                dropIndicatorFruit.style.left = `${x / gameCanvas.width * 100}%`;
-                dropIndicatorFruit.style.top = `${FRUIT_DROP_Y - fruitRadius}px`; // Position above drop line
-            };
-
-            const handlePointerMove = (e) => {
-                if (isGameOver) return;
-                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-                updateDropPosition(clientX);
-            };
-
-            const handlePointerDown = (e) => {
-                if (isGameOver) return;
-                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-                const rect = gameCanvas.getBoundingClientRect();
-                const dropX = clientX - rect.left;
-                dropFruit(dropX);
-            };
-
             gameCanvas.addEventListener('mousemove', handlePointerMove);
             gameCanvas.addEventListener('touchmove', handlePointerMove);
             gameCanvas.addEventListener('mousedown', handlePointerDown);
@@ -515,3 +515,4 @@
     </script>
 </body>
 </html>
+
