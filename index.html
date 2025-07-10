@@ -249,9 +249,9 @@
         </div>
 
         <div class="sidebar">
-            <button class="sidebar-button" id="makeBombButton">Make Bomb<br><span class="cost">(100 Gold)</span></button>
-            <button class="sidebar-button" id="pickNextButton">Pick Next<br><span class="cost">(50 Gold)</span></button>
-            <button class="sidebar-button" id="popItemsButton">Pop Items<br><span class="cost">(150 Gold)</span></button>
+            <button class="sidebar-button" id="makeBombButton">Make Bomb<br><span class="cost">(200 Gold)</span></button>
+            <button class="sidebar-button" id="pickNextButton">Pick Next<br><span class="cost">(100 Gold)</span></button>
+            <button class="sidebar-button" id="popItemsButton">Pop Items<br><span class="cost">(300 Gold)</span></button>
             <!-- Tilt not implemented as per previous decision -->
             <!-- <button class="sidebar-button" id="refillTiltsButton">Refill Tilts<br><span class="cost">(75 Gold)</span></button> -->
         </div>
@@ -275,10 +275,10 @@
 
         const FRUIT_TYPES = [
             { name: "Cherry", radius: 15, color: "#ef4444", value: 10, emoji: "🍒" },
-            { name: "Strawberry", radius: 20, color: "#f43f5e", value: 20, emoji: "🍓" },
+            { name: "Strawberry", radius: 20, color: "#FF4500", value: 20, emoji: "🍓" }, // Changed color
             { name: "Grape", radius: 25, color: "#8b5cf6", value: 30, emoji: "🍇" },
             { name: "Dekopon", radius: 30, color: "#fb923c", value: 40, emoji: "🍊" },
-            { name: "Orange", radius: 35, color: "#f97316", value: 50, emoji: "🍊" },
+            { name: "Orange", radius: 35, color: "#FF8C00", value: 50, emoji: "🥭" },    // Changed color and emoji
             { name: "Apple", radius: 40, color: "#dc2626", value: 60, emoji: "🍎" },
             { name: "Pear", radius: 45, color: "#a3e635", value: 70, emoji: "🍐" },
             { name: "Peach", radius: 50, color: "#fca5a5", value: 80, emoji: "🍑" },
@@ -288,9 +288,9 @@
         ];
 
         const POWER_UP_COSTS = {
-            makeBomb: 100,
-            pickNext: 50,
-            popItems: 150
+            makeBomb: 200, // Increased cost
+            pickNext: 100, // Increased cost
+            popItems: 300  // Increased cost
         };
 
         let engine;
@@ -315,7 +315,6 @@
         // DOM elements
         const gameCanvas = document.getElementById('gameCanvas');
         const goldElement = document.getElementById('gold'); // Changed scoreElement to goldElement
-        // Removed nextFruitNameElement as it's not in the HTML and not needed for the current UI
         const gameOverOverlay = document.getElementById('gameOverOverlay');
         const restartButton = document.getElementById('restartButton');
         const dropLine = document.getElementById('dropLine');
@@ -551,7 +550,6 @@
                 // Random from a wider range, but still favoring smaller ones
                 nextFruitTypeIndex = Math.floor(Math.random() * Math.min(FRUIT_TYPES.length, 5));
             }
-            // Removed nextFruitNameElement.textContent update as the element is not present in HTML
             updateDropIndicator();
         }
 
@@ -845,6 +843,7 @@
             dropIndicatorFruit.style.left = `${x / currentCanvasWidth * 100}%`;
         };
 
+        // Named event handlers for proper removal
         const handlePointerMove = (e) => {
             if (isGameOver) return;
             e.preventDefault(); // Prevent scrolling on touch devices
@@ -872,6 +871,12 @@
             }
         };
 
+        const handleRestartClick = () => restartGame();
+        const handleMakeBombClick = () => activatePowerUp('makeBomb');
+        const handlePickNextClick = () => activatePowerUp('pickNext');
+        const handlePopItemsClick = () => activatePowerUp('popItems');
+
+
         // Add event listeners for dropping fruits and moving the drop line
         function addEventListeners() {
             gameCanvas.addEventListener('mousemove', handlePointerMove);
@@ -879,12 +884,12 @@
             gameCanvas.addEventListener('mousedown', handlePointerDown);
             gameCanvas.addEventListener('touchstart', handlePointerDown);
 
-            restartButton.addEventListener('click', restartGame);
+            restartButton.addEventListener('click', handleRestartClick);
 
             // Power-up button event listeners
-            makeBombButton.addEventListener('click', () => activatePowerUp('makeBomb'));
-            pickNextButton.addEventListener('click', () => activatePowerUp('pickNext'));
-            popItemsButton.addEventListener('click', () => activatePowerUp('popItems'));
+            makeBombButton.addEventListener('click', handleMakeBombClick);
+            pickNextButton.addEventListener('click', handlePickNextClick);
+            popItemsButton.addEventListener('click', handlePopItemsClick);
         }
 
         // Remove event listeners (called on game over)
@@ -894,12 +899,12 @@
             gameCanvas.removeEventListener('mousedown', handlePointerDown);
             gameCanvas.removeEventListener('touchstart', handlePointerDown);
 
-            restartButton.removeEventListener('click', restartGame);
+            restartButton.removeEventListener('click', handleRestartClick);
 
             // Remove power-up button event listeners to prevent memory leaks/double-binding
-            makeBombButton.removeEventListener('click', () => activatePowerUp('makeBomb'));
-            pickNextButton.removeEventListener('click', () => activatePowerUp('pickNext'));
-            popItemsButton.removeEventListener('click', () => activatePowerUp('popItems'));
+            makeBombButton.removeEventListener('click', handleMakeBombClick);
+            pickNextButton.removeEventListener('click', handlePickNextClick);
+            popItemsButton.removeEventListener('click', handlePopItemsClick);
         }
 
         // Initial setup on window load
