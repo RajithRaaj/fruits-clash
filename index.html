@@ -3,670 +3,373 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fruit Clash Merge</title>
-    <!-- Tailwind CSS CDN for responsive styling -->
+    <title>Merge Fruits</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f0fdf4; /* Light green background */
+            background-color: #f0f4f8; /* Light blue-gray background */
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
             margin: 0;
-            overflow: hidden; /* Prevent scrolling */
-        }
-        .game-wrapper {
-            @apply flex flex-col items-center justify-center min-h-screen w-full p-4;
-            background: linear-gradient(to bottom right, #e0ffe0, #c0ffc0); /* Subtle gradient background */
+            overflow: hidden; /* Prevent body scroll */
         }
         .game-container {
-            @apply bg-white rounded-3xl shadow-2xl p-6 flex flex-col items-center relative;
-            max-width: 480px; /* Max width for game area */
-            width: 95%; /* Responsive width */
-            max-height: 95vh; /* Responsive height */
+            position: relative;
+            background-color: #ffffff;
+            border-radius: 16px; /* Rounded corners for the container */
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            overflow: hidden; /* Hide overflow from fruits */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            max-width: 90vw; /* Responsive width */
+            max-height: 90vh; /* Responsive height */
             box-sizing: border-box;
-            overflow: hidden; /* Hide overflow from physics engine */
         }
         canvas {
-            @apply bg-gradient-to-b from-green-200 to-lime-200 rounded-xl border-4 border-green-500;
+            background-color: #e2e8f0; /* Light gray for canvas background */
+            border-radius: 8px; /* Rounded corners for canvas */
             display: block;
-            touch-action: none; /* Prevent default touch actions like scrolling/zooming */
-            width: 100%; /* Canvas fills container width */
-            height: auto; /* Maintain aspect ratio */
-            aspect-ratio: 400 / 600; /* Fixed aspect ratio for game area */
+            touch-action: none; /* Prevent default touch actions like scrolling */
         }
-        .game-info {
-            @apply w-full flex justify-between items-center py-4 px-2 text-xl font-bold text-green-700;
+        .score-board {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: #4a5568; /* Darker gray for score */
+            color: #ffffff;
+            padding: 8px 16px;
+            border-radius: 9999px; /* Pill shape */
+            font-weight: bold;
+            font-size: 1.25rem;
+            z-index: 10;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
         .next-fruit-display {
-            @apply flex items-center gap-2 text-lg text-green-600;
-        }
-        .next-fruit-emoji {
-            font-size: 2.5rem; /* Larger emoji for next fruit */
-            line-height: 1; /* Remove extra line height */
-            filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.2)); /* Subtle shadow */
-        }
-        .game-button {
-            @apply bg-green-500 text-white font-semibold py-3 px-6 rounded-xl shadow-md transition-all duration-200 ease-in-out;
-            @apply hover:bg-green-600 hover:shadow-lg active:bg-green-700 active:scale-95;
-            @apply focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-opacity-75;
-            cursor: pointer;
-            border: none;
-            margin: 0.5rem;
-        }
-        .icon-button {
-            @apply bg-green-400 text-white p-2 rounded-full shadow-md transition-all duration-200 ease-in-out;
-            @apply hover:bg-green-500 active:scale-90;
-            width: 44px; /* Ensure touch target size */
-            height: 44px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 1.5rem;
-        }
-        .overlay {
-            @apply absolute inset-0 bg-black bg-opacity-70 flex flex-col justify-center items-center text-white text-center rounded-3xl z-20;
-        }
-        .overlay-content {
-            @apply p-8 rounded-2xl bg-gradient-to-br from-green-700 to-green-900 shadow-xl;
-        }
-        .overlay h2 {
-            @apply text-4xl font-extrabold mb-4;
-        }
-        .overlay p {
-            @apply text-xl mb-6;
-        }
-        .score-popup {
             position: absolute;
-            color: #FFD700; /* Gold color */
+            top: 20px;
+            left: 20px;
+            background-color: #63b3ed; /* Blue for next fruit display */
+            color: #ffffff;
+            padding: 8px 16px;
+            border-radius: 9999px;
             font-weight: bold;
-            font-size: 1.5rem;
-            opacity: 1;
-            pointer-events: none; /* Allow clicks through */
-            animation: fadeOutUp 1s forwards;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            font-size: 1.25rem;
+            z-index: 10;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
-        @keyframes fadeOutUp {
-            from {
-                transform: translateY(0);
-                opacity: 1;
-            }
-            to {
-                transform: translateY(-50px);
-                opacity: 0;
-            }
-        }
-        .particle {
-            position: absolute;
-            background-color: white;
-            border-radius: 50%;
-            opacity: 1;
-            animation: particleMoveFade 0.8s forwards;
-            pointer-events: none;
-        }
-        @keyframes particleMoveFade {
-            from {
-                transform: translate(0, 0) scale(1);
-                opacity: 1;
-            }
-            to {
-                transform: translate(var(--dx), var(--dy)) scale(0);
-                opacity: 0;
-            }
-        }
-        .game-over-line {
-            position: absolute;
-            left: 0;
-            width: 100%;
-            height: 2px;
-            background-color: rgba(255, 0, 0, 0.6);
-            z-index: 10; /* Above fruits, below overlays */
-            pointer-events: none;
-        }
-
-        /* Container/Bowl Design - using pseudo-elements for curved bottom */
-        .canvas-wrapper {
-            position: relative;
-            width: 100%;
-            aspect-ratio: 400 / 600;
-            border-radius: 0.75rem;
-            overflow: hidden; /* Hide Matter.js rendering outside this */
-        }
-        .canvas-wrapper::before {
-            content: '';
-            position: absolute;
-            bottom: -50px; /* Adjust to control curve depth */
-            left: -10%;
-            width: 120%; /* Wider than canvas to ensure full curve */
-            height: 100px; /* Height of the curved part */
-            background-color: #a7f3d0; /* Match canvas background */
-            border-radius: 50%;
-            border: 4px solid #34d399; /* Match canvas border */
-            border-top: none; /* No top border for the curve */
-            z-index: 0; /* Behind the fruits */
-        }
-        .canvas-wrapper canvas {
-            position: relative; /* To be above the pseudo-element */
-            z-index: 1;
-        }
-
-        /* Specific styling for the Matter.js canvas if needed */
-        #matterCanvas {
+        .game-over-overlay {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            /* Matter.js will draw on this, so it needs to be transparent or match background */
-            background-color: transparent;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #ffffff;
+            font-size: 2.5rem;
+            font-weight: bold;
+            text-align: center;
+            z-index: 20;
+            border-radius: 16px;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+        }
+        .game-over-overlay.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+        .restart-button {
+            background-color: #48bb78; /* Green for restart button */
+            color: #ffffff;
+            padding: 12px 24px;
+            border-radius: 9999px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            margin-top: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+        .restart-button:hover {
+            background-color: #38a169; /* Darker green on hover */
+            transform: translateY(-2px);
+        }
+        .restart-button:active {
+            transform: translateY(0);
+        }
+        .drop-line {
+            position: absolute;
+            top: 0;
+            width: 2px;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.5); /* White line */
+            z-index: 5;
+            pointer-events: none; /* Do not block mouse events */
+        }
+        .drop-indicator-fruit {
+            position: absolute;
+            top: -50px; /* Initially off-screen */
+            left: 50%;
+            transform: translateX(-50%);
+            border-radius: 50%;
+            opacity: 0.7;
+            pointer-events: none;
+            z-index: 6;
+            transition: top 0.1s ease-out; /* Smooth transition for indicator */
+        }
+        .drop-zone-line {
+            position: absolute;
+            top: 100px; /* Line where fruits will be dropped from */
+            left: 50%;
+            transform: translateX(-50%);
+            width: calc(100% - 40px); /* Adjust based on padding */
+            height: 2px;
+            background-color: #cbd5e0; /* Light gray line */
+            z-index: 5;
         }
     </style>
 </head>
-<body class="bg-gradient-to-br from-green-100 to-lime-100">
-    <div class="game-wrapper">
-        <!-- Start Screen -->
-        <div id="startScreen" class="overlay">
-            <div class="overlay-content">
-                <h2>Fruit Clash Merge!</h2>
-                <p>Merge fruits to create the ultimate watermelon!</p>
-                <button id="playButton" class="game-button">Play Game</button>
-                <button id="howToPlayButton" class="game-button">How to Play</button>
-                <p class="mt-4 text-sm text-gray-200">High Score: <span id="highScoreDisplay">0</span></p>
-            </div>
-        </div>
-
-        <!-- Game Screen -->
-        <div id="gameScreen" class="game-container hidden">
-            <div class="game-info">
-                <div id="scoreDisplay">Score: 0</div>
-                <div class="next-fruit-display">Next: <span id="nextFruitEmoji" class="next-fruit-emoji"></span></div>
-                <div class="flex gap-2">
-                    <button id="pauseButton" class="icon-button">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pause"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
-                    </button>
-                    <button id="soundToggleButton" class="icon-button">
-                        <svg id="soundOnIcon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-volume-2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M22.36 1.64a14 14 0 0 1 0 20.72"/></svg>
-                        <svg id="soundOffIcon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-volume-x hidden"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="22" x2="16" y1="9" y2="15"/><line x1="16" x2="22" y1="9" y2="15"/></svg>
-                    </button>
-                </div>
-            </div>
-            <div class="canvas-wrapper">
-                <canvas id="gameCanvas"></canvas> <!-- For custom drawing (emojis, particles, popups) -->
-                <canvas id="matterCanvas"></canvas> <!-- For Matter.js rendering (optional, can be hidden) -->
-                <div id="gameOverLine" class="game-over-line"></div>
-            </div>
-        </div>
-
-        <!-- Instructions Modal -->
-        <div id="instructionsModal" class="overlay hidden">
-            <div class="overlay-content">
-                <h2>How to Play</h2>
-                <p class="text-base leading-relaxed">
-                    Click or tap in the game area to drop fruits.
-                    Merge two identical fruits by having them touch and settle to create a larger fruit.
-                    Earn points for each merge!
-                    Don't let fruits pile up above the red line, or it's game over!
-                    Aim to create the biggest fruit: the Watermelon!
-                </p>
-                <button id="closeInstructionsButton" class="game-button">Got It!</button>
-            </div>
-        </div>
-
-        <!-- Pause Overlay -->
-        <div id="pauseOverlay" class="overlay hidden">
-            <div class="overlay-content">
-                <h2>Game Paused</h2>
-                <button id="resumeButton" class="game-button">Resume</button>
-                <button id="quitButton" class="game-button">Quit to Menu</button>
-            </div>
-        </div>
-
-        <!-- Game Over Overlay -->
-        <div id="gameOverOverlay" class="overlay hidden">
-            <div class="overlay-content">
-                <h2 id="gameOverMessage"></h2>
-                <p>Final Score: <span id="finalScoreDisplay">0</span></p>
-                <button id="restartButton" class="game-button">Play Again</button>
-                <button id="gameOverQuitButton" class="game-button">Quit to Menu</button>
-            </div>
+<body>
+    <div class="game-container">
+        <div class="score-board">Score: <span id="score">0</span></div>
+        <div class="next-fruit-display">Next: <span id="next-fruit-name"></span></div>
+        <canvas id="gameCanvas"></canvas>
+        <div class="drop-line" id="dropLine"></div>
+        <div class="drop-indicator-fruit" id="dropIndicatorFruit"></div>
+        <div class="game-over-overlay" id="gameOverOverlay">
+            Game Over!
+            <button class="restart-button" id="restartButton">Restart</button>
         </div>
     </div>
 
-    <!-- Audio Elements -->
-    <audio id="bgMusic" loop>
-        <source src="https://assets.mixkit.co/sfx/preview/mixkit-game-level-opened-2042.mp3" type="audio/mpeg">
-        Your browser does not support the audio element.
-    </audio>
-    <audio id="dropSound">
-        <source src="https://assets.mixkit.co/sfx/preview/mixkit-quick-thud-2849.mp3" type="audio/mpeg">
-        Your browser does not support the audio element.
-    </audio>
-    <audio id="mergeSound1">
-        <source src="https://assets.mixkit.co/sfx/preview/mixkit-game-bling-2070.mp3" type="audio/mpeg">
-        Your browser does not support the audio element.
-    </audio>
-    <audio id="mergeSound2">
-        <source src="https://assets.mixkit.co/sfx/preview/mixkit-game-bonus-chime-1947.mp3" type="audio/mpeg">
-        Your browser does not support the audio element.
-    </audio>
-    <audio id="gameOverSound">
-        <source src="https://assets.mixkit.co/sfx/preview/mixkit-arcade-retro-game-over-213.mp3" type="audio/mpeg">
-        Your browser does not support the audio element.
-    </audio>
-    <audio id="winSound">
-        <source src="https://assets.mixkit.co/sfx/preview/mixkit-small-fanfare-melody-2882.mp3" type="audio/mpeg">
-        Your browser does not support the audio element.
-    </audio>
-    <audio id="buttonClickSound">
-        <source src="https://assets.mixkit.co/sfx/preview/mixkit-simple-click-1108.mp3" type="audio/mpeg">
-        Your browser does not support the audio element.
-    </audio>
-
-    <!-- Matter.js CDN -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
-
     <script>
         // Matter.js aliases
-        const Engine = Matter.Engine;
-        const Render = Matter.Render;
-        const World = Matter.World;
-        const Bodies = Matter.Bodies;
-        const Events = Matter.Events;
-        const Composite = Matter.Composite;
+        const Engine = Matter.Engine,
+              Render = Matter.Render,
+              Runner = Matter.Runner,
+              Bodies = Matter.Bodies,
+              Composite = Matter.Composite,
+              Events = Matter.Events;
 
-        // Get canvas for custom drawing
-        const gameCanvas = document.getElementById('gameCanvas');
-        const ctx = gameCanvas.getContext('2d');
-        const matterCanvas = document.getElementById('matterCanvas'); // Canvas for Matter.js renderer (can be hidden)
-
-        // Game constants
-        const BOARD_WIDTH = 400; // Fixed width for the game area
-        const BOARD_HEIGHT = 600; // Fixed height for the game area
+        // Game configuration
+        const CANVAS_WIDTH = 360; // Standard mobile width
+        const CANVAS_HEIGHT = 600; // Standard mobile height
         const WALL_THICKNESS = 20;
-        const GAME_OVER_LINE_Y_RATIO = 0.15; // Percentage from top for game over line
-        const GAME_OVER_SUSTAINED_TIME = 2000; // 2 seconds
-
-        // Fruit progression: emoji, radius, base score, Matter.js collision category
-        // Categories are used for selective collision detection (e.g., merging only identical types)
-        const CATEGORY_FRUIT = 0x0001; // Category for all fruits
-        const FRUIT_SPECS = [
-            { emoji: '🍒', radius: 15, score: 10, category: CATEGORY_FRUIT }, // Cherry
-            { emoji: '🍓', radius: 20, score: 20, category: CATEGORY_FRUIT }, // Strawberry
-            { emoji: '🍇', radius: 25, score: 40, category: CATEGORY_FRUIT }, // Grape
-            { emoji: '🍊', radius: 30, score: 80, category: CATEGORY_FRUIT }, // Orange
-            { emoji: '🍎', radius: 35, score: 160, category: CATEGORY_FRUIT }, // Apple
-            { emoji: '🍌', radius: 40, score: 320, category: CATEGORY_FRUIT }, // Banana
-            { emoji: '🍍', radius: 45, score: 640, category: CATEGORY_FRUIT }, // Pineapple
-            { emoji: '🍉', radius: 50, score: 1280, category: CATEGORY_FRUIT } // Watermelon (Goal)
+        const FRUIT_DROP_Y = 100; // Y-coordinate where fruits are dropped from
+        const GAME_OVER_Y = 80; // If fruit center goes above this line, game over
+        const FRUIT_TYPES = [
+            { name: "Cherry", radius: 15, color: "#ef4444", value: 10 },    // Red
+            { name: "Strawberry", radius: 20, color: "#f43f5e", value: 20 }, // Pinkish Red
+            { name: "Grape", radius: 25, color: "#8b5cf6", value: 30 },     // Purple
+            { name: "Dekopon", radius: 30, color: "#fb923c", value: 40 },   // Orange
+            { name: "Orange", radius: 35, color: "#f97316", value: 50 },    // Darker Orange
+            { name: "Apple", radius: 40, color: "#dc2626", value: 60 },     // Dark Red
+            { name: "Pear", radius: 45, color: "#a3e635", value: 70 },      // Light Green
+            { name: "Peach", radius: 50, color: "#fca5a5", value: 80 },     // Light Pink
+            { name: "Pineapple", radius: 55, color: "#facc15", value: 90 }, // Yellow
+            { name: "Melon", radius: 60, color: "#22c55e", value: 100 },    // Green
+            { name: "Watermelon", radius: 65, color: "#be123c", value: 110 } // Dark Green with Red
         ];
 
-        // Game state variables
         let engine;
-        let world;
-        let fruits = []; // Array of custom fruit objects (linked to Matter.js bodies)
-        let score = 0;
-        let highScore = localStorage.getItem('fruitClashHighScore') || 0;
-        let currentDroppingFruit = null; // The Matter.js body currently being controlled
+        let render;
+        let runner;
+        let currentFruit = null;
         let nextFruitTypeIndex = 0;
-        let isDropping = false; // Flag to prevent rapid dropping
-        let gameState = 'start'; // 'start', 'playing', 'paused', 'gameOver', 'instructions'
-        let mergeQueue = []; // Queue for fruits to be merged
-        let particles = []; // Array for particle effects
-        let scorePopups = []; // Array for score pop-up texts
-        let comboCount = 0;
-        let lastMergeTime = 0;
-        const COMBO_THRESHOLD = 500; // Milliseconds for combo
-        let gameOverLineY = 0;
-        let fruitsAboveLine = new Map(); // Map<Body.id, timestamp>
+        let score = 0;
+        let isGameOver = false;
+        let isDropping = false; // To prevent multiple drops while one is in progress
 
-        // Audio elements
-        const bgMusic = document.getElementById('bgMusic');
-        const dropSound = document.getElementById('dropSound');
-        const mergeSound1 = document.getElementById('mergeSound1');
-        const mergeSound2 = document.getElementById('mergeSound2');
-        const gameOverSound = document.getElementById('gameOverSound');
-        const winSound = document.getElementById('winSound');
-        const buttonClickSound = document.getElementById('buttonClickSound');
-        let soundEnabled = true;
-
-        // UI elements
-        const startScreen = document.getElementById('startScreen');
-        const gameScreen = document.getElementById('gameScreen');
-        const instructionsModal = document.getElementById('instructionsModal');
-        const pauseOverlay = document.getElementById('pauseOverlay');
+        // DOM elements
+        const gameCanvas = document.getElementById('gameCanvas');
+        const scoreElement = document.getElementById('score');
+        const nextFruitNameElement = document.getElementById('next-fruit-name');
         const gameOverOverlay = document.getElementById('gameOverOverlay');
-
-        const playButton = document.getElementById('playButton');
-        const howToPlayButton = document.getElementById('howToPlayButton');
-        const closeInstructionsButton = document.getElementById('closeInstructionsButton');
-        const pauseButton = document.getElementById('pauseButton');
-        const resumeButton = document.getElementById('resumeButton');
-        const quitButton = document.getElementById('quitButton');
         const restartButton = document.getElementById('restartButton');
-        const gameOverQuitButton = document.getElementById('gameOverQuitButton');
-        const soundToggleButton = document.getElementById('soundToggleButton');
-        const soundOnIcon = document.getElementById('soundOnIcon');
-        const soundOffIcon = document.getElementById('soundOffIcon');
+        const dropLine = document.getElementById('dropLine');
+        const dropIndicatorFruit = document.getElementById('dropIndicatorFruit');
+        const gameContainer = document.querySelector('.game-container');
 
-        const scoreDisplay = document.getElementById('scoreDisplay');
-        const highScoreDisplay = document.getElementById('highScoreDisplay');
-        const nextFruitEmoji = document.getElementById('nextFruitEmoji');
-        const gameOverMessage = document.getElementById('gameOverMessage');
-        const finalScoreDisplay = document.getElementById('finalScoreDisplay');
-        const gameOverLineElement = document.getElementById('gameOverLine');
+        // Adjust canvas size for responsiveness
+        function adjustCanvasSize() {
+            const containerWidth = gameContainer.clientWidth - 40; // Account for padding
+            const containerHeight = gameContainer.clientHeight - 40; // Account for padding
 
-        /**
-         * Sets up Matter.js engine, world, and renderer.
-         * Creates static walls for the game container.
-         */
-        function setupMatterJs() {
-            engine = Engine.create();
-            world = engine.world;
+            // Maintain aspect ratio or fit within container
+            const aspectRatio = CANVAS_WIDTH / CANVAS_HEIGHT;
+            let newWidth = containerWidth;
+            let newHeight = containerWidth / aspectRatio;
 
-            // Optional: Matter.js renderer for debugging or if we want Matter to draw
-            // const render = Render.create({
-            //     canvas: matterCanvas,
-            //     engine: engine,
-            //     options: {
-            //         width: BOARD_WIDTH,
-            //         height: BOARD_HEIGHT,
-            //         wireframes: false,
-            //         background: 'transparent'
-            //     }
-            // });
-            // Render.run(render);
-
-            // Create walls (static bodies)
-            const ground = Bodies.rectangle(BOARD_WIDTH / 2, BOARD_HEIGHT + WALL_THICKNESS / 2, BOARD_WIDTH, WALL_THICKNESS, { isStatic: true, label: 'ground' });
-            const leftWall = Bodies.rectangle(-WALL_THICKNESS / 2, BOARD_HEIGHT / 2, WALL_THICKNESS, BOARD_HEIGHT, { isStatic: true, label: 'leftWall' });
-            const rightWall = Bodies.rectangle(BOARD_WIDTH + WALL_THICKNESS / 2, BOARD_HEIGHT / 2, WALL_THICKNESS, BOARD_HEIGHT, { isStatic: true, label: 'rightWall' });
-
-            World.add(world, [ground, leftWall, rightWall]);
-
-            // Adjust gravity slightly if needed
-            engine.gravity.y = 1;
-
-            // Collision event listener
-            Events.on(engine, 'collisionStart', handleCollision);
-            Events.on(engine, 'collisionActive', handleCollision); // Also check active collisions for continuous contact
-
-            // Matter.js engine update loop (separate from render loop)
-            // Moved here to ensure 'engine' is defined when the listener is attached
-            Events.on(engine, 'afterUpdate', () => {
-                // Process merges after physics updates
-                if (mergeQueue.length > 0) {
-                    processMerges();
-                }
-                // Check game over condition after all updates
-                checkGameOver();
-            });
-        }
-
-        /**
-         * Custom Fruit object to hold Matter.js body and game-specific properties.
-         */
-        class GameFruit {
-            constructor(body, typeIndex) {
-                this.body = body;
-                this.typeIndex = typeIndex;
-                this.emoji = FRUIT_SPECS[typeIndex].emoji;
-                this.radius = FRUIT_SPECS[typeIndex].radius;
-                this.scoreValue = FRUIT_SPECS[typeIndex].score;
-                this.merged = false; // Flag to indicate if this fruit has been part of a merge
-                this.id = body.id; // Use Matter.js body ID for unique identification
+            if (newHeight > containerHeight) {
+                newHeight = containerHeight;
+                newWidth = containerHeight * aspectRatio;
             }
 
-            draw() {
-                const pos = this.body.position;
-                const angle = this.body.angle;
+            gameCanvas.width = newWidth;
+            gameCanvas.height = newHeight;
 
-                ctx.save();
-                ctx.translate(pos.x, pos.y);
-                ctx.rotate(angle);
+            // Update Matter.js renderer dimensions
+            if (render) {
+                render.options.width = newWidth;
+                render.options.height = newHeight;
+                Render.setPixelRatio(render, window.devicePixelRatio || 1);
+            }
 
-                ctx.font = `${this.radius * 1.5}px Arial`; // Adjust font size based on radius
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText(this.emoji, 0, 0);
-
-                ctx.restore();
+            // Update wall positions if they exist
+            if (engine && engine.world.bodies.length > 0) {
+                updateWalls();
             }
         }
 
-        /**
-         * Particle object for visual effects.
-         */
-        class Particle {
-            constructor(x, y, color, size, dx, dy) {
-                this.x = x;
-                this.y = y;
-                this.color = color;
-                this.size = size;
-                this.dx = dx;
-                this.dy = dy;
-                this.opacity = 1;
-                this.life = 60; // Frames
-                this.currentLife = 0;
-            }
-
-            update() {
-                this.x += this.dx;
-                this.y += this.dy;
-                this.opacity = 1 - (this.currentLife / this.life);
-                this.currentLife++;
-            }
-
-            draw() {
-                ctx.save();
-                ctx.globalAlpha = this.opacity;
-                ctx.fillStyle = this.color;
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.restore();
-            }
-        }
-
-        /**
-         * Score Pop-up object.
-         */
-        class ScorePopup {
-            constructor(x, y, text) {
-                this.x = x;
-                this.y = y;
-                this.text = text;
-                this.opacity = 1;
-                this.life = 60; // Frames
-                this.currentLife = 0;
-            }
-
-            update() {
-                this.y -= 1; // Move upwards
-                this.opacity = 1 - (this.currentLife / this.life);
-                this.currentLife++;
-            }
-
-            draw() {
-                ctx.save();
-                ctx.globalAlpha = this.opacity;
-                ctx.fillStyle = '#FFD700'; // Gold color
-                ctx.font = 'bold 1.5rem Inter';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.shadowColor = 'rgba(0,0,0,0.5)';
-                ctx.shadowBlur = 4;
-                ctx.shadowOffsetX = 1;
-                ctx.shadowOffsetY = 1;
-                ctx.fillText(this.text, this.x, this.y);
-                ctx.restore();
-            }
-        }
-
-        /**
-         * Resizes the canvas and updates the game over line position.
-         */
-        function calculateCanvasSize() {
-            gameCanvas.width = BOARD_WIDTH;
-            gameCanvas.height = BOARD_HEIGHT;
-            matterCanvas.width = BOARD_WIDTH;
-            matterCanvas.height = BOARD_HEIGHT;
-
-            gameOverLineY = BOARD_HEIGHT * GAME_OVER_LINE_Y_RATIO;
-            gameOverLineElement.style.top = `${gameOverLineY}px`;
-            gameOverLineElement.style.width = `${BOARD_WIDTH}px`; // Ensure line matches canvas width
-        }
-
-        /**
-         * Initializes the game state.
-         */
-        function initializeGame() {
-            // Clear existing Matter.js bodies if restarting
-            if (world) {
-                World.clear(world, false); // Keep static bodies
-                Engine.clear(engine);
-            }
-            setupMatterJs(); // Re-setup Matter.js for a fresh start
-
-            fruits = [];
+        // Initialize game
+        function initGame() {
+            // Reset game state
             score = 0;
-            comboCount = 0;
-            lastMergeTime = 0;
-            currentDroppingFruit = null;
+            isGameOver = false;
             isDropping = false;
-            mergeQueue = [];
-            particles = [];
-            scorePopups = [];
-            fruitsAboveLine.clear();
+            scoreElement.textContent = score;
+            gameOverOverlay.classList.remove('visible');
 
-            updateUI();
-            generateNextFruit();
-        }
+            // Create an engine
+            engine = Engine.create();
+            engine.gravity.y = 1; // Standard gravity
 
-        /**
-         * Generates the next fruit to be dropped.
-         * Progressively introduces larger fruits based on score.
-         */
-        function generateNextFruit() {
-            let maxFruitIndex = FRUIT_SPECS.length - 2; // Default max (not watermelon or pineapple initially)
-
-            if (score >= 500) maxFruitIndex = FRUIT_SPECS.length - 1; // Allow pineapple
-            if (score >= 1500) maxFruitIndex = FRUIT_SPECS.length - 1; // Allow melon
-            // Watermelon is only by merge
-
-            // Randomly select a fruit from the allowed range
-            nextFruitTypeIndex = Math.floor(Math.random() * (maxFruitIndex + 1));
-            nextFruitEmoji.textContent = FRUIT_SPECS[nextFruitTypeIndex].emoji;
-        }
-
-        /**
-         * Main game loop for custom drawing and particle/popup updates.
-         */
-        function renderLoop() {
-            if (gameState === 'playing') {
-                ctx.clearRect(0, 0, gameCanvas.width, gameCanvas.height); // Clear custom drawing canvas
-
-                // Draw fruits from Matter.js bodies
-                fruits.forEach(gameFruit => gameFruit.draw());
-
-                // Update and draw particles
-                for (let i = particles.length - 1; i >= 0; i--) {
-                    const p = particles[i];
-                    p.update();
-                    p.draw();
-                    if (p.currentLife >= p.life) {
-                        particles.splice(i, 1);
-                    }
-                }
-
-                // Update and draw score pop-ups
-                for (let i = scorePopups.length - 1; i >= 0; i--) {
-                    const sp = scorePopups[i];
-                    sp.update();
-                    sp.draw();
-                    if (sp.currentLife >= sp.life) {
-                        scorePopups.splice(i, 1);
-                    }
-                }
-            }
-            requestAnimationFrame(renderLoop);
-        }
-
-        /**
-         * Updates the score and next fruit display.
-         */
-        function updateUI() {
-            scoreDisplay.textContent = `Score: ${score}`;
-            highScoreDisplay.textContent = highScore;
-        }
-
-        /**
-         * Handles input (click/touch) to drop a fruit.
-         * @param {Event} event - The touch or mouse event.
-         */
-        function handleInput(event) {
-            if (gameState !== 'playing' || isDropping) return;
-
-            event.preventDefault(); // Prevent default browser actions
-
-            let clientX;
-            if (event.type.startsWith('touch')) {
-                clientX = event.touches[0].clientX;
-            } else {
-                clientX = event.clientX;
-            }
-
-            const rect = gameCanvas.getBoundingClientRect();
-            const xInCanvas = clientX - rect.left;
-
-            const fruitSpec = FRUIT_SPECS[nextFruitTypeIndex];
-            const radius = fruitSpec.radius;
-
-            // Calculate the x position for the new fruit, clamped within canvas bounds
-            let dropX = Math.max(radius, Math.min(BOARD_WIDTH - radius, xInCanvas));
-
-            // Create Matter.js body
-            const newBody = Bodies.circle(dropX, radius, radius, {
-                restitution: 0.7, // Bounciness
-                friction: 0.001, // Air friction
-                density: 0.001, // Mass
-                collisionFilter: {
-                    category: CATEGORY_FRUIT // Assign fruit category
+            // Create a renderer
+            render = Render.create({
+                canvas: gameCanvas,
+                engine: engine,
+                options: {
+                    width: gameCanvas.width,
+                    height: gameCanvas.height,
+                    wireframes: false, // Render solid shapes
+                    background: 'transparent', // Canvas background is handled by CSS
+                    pixelRatio: window.devicePixelRatio || 1
                 }
             });
 
-            // Add custom properties to the body for easy lookup
-            newBody.fruitTypeIndex = nextFruitTypeIndex;
-            newBody.isFalling = true; // Flag for game logic, not Matter.js
-            newBody.isBeingDropped = true; // Flag for the fruit currently in player control
+            // Create runner
+            runner = Runner.create();
 
-            // Add to Matter.js world
-            World.add(world, newBody);
+            // Add walls and floor
+            createWalls();
 
-            // Create custom GameFruit object and add to our array
-            currentDroppingFruit = new GameFruit(newBody, nextFruitTypeIndex);
-            fruits.push(currentDroppingFruit);
+            // Run the renderer and engine
+            Render.run(render);
+            Runner.run(runner, engine);
+
+            // Generate the first fruit
+            generateNextFruit();
+            updateDropIndicator();
+
+            // Add event listeners
+            addEventListeners();
+
+            // Add collision event listener
+            Events.on(engine, 'collisionStart', handleCollision);
+            Events.on(engine, 'afterUpdate', checkGameOver);
+        }
+
+        // Create game boundaries (walls and floor)
+        function createWalls() {
+            Composite.clear(engine.world); // Clear existing bodies
+
+            const canvasWidth = gameCanvas.width;
+            const canvasHeight = gameCanvas.height;
+
+            // Floor
+            Composite.add(engine.world, [
+                Bodies.rectangle(canvasWidth / 2, canvasHeight + WALL_THICKNESS / 2, canvasWidth, WALL_THICKNESS, { isStatic: true, label: 'wall', render: { fillStyle: '#94a3b8' } })
+            ]);
+
+            // Walls
+            Composite.add(engine.world, [
+                Bodies.rectangle(-WALL_THICKNESS / 2, canvasHeight / 2, WALL_THICKNESS, canvasHeight, { isStatic: true, label: 'wall', render: { fillStyle: '#94a3b8' } }), // Left wall
+                Bodies.rectangle(canvasWidth + WALL_THICKNESS / 2, canvasHeight / 2, WALL_THICKNESS, canvasHeight, { isStatic: true, label: 'wall', render: { fillStyle: '#94a3b8' } })  // Right wall
+            ]);
+        }
+
+        // Update wall positions when canvas resizes
+        function updateWalls() {
+            const canvasWidth = gameCanvas.width;
+            const canvasHeight = gameCanvas.height;
+
+            // Find and remove existing walls
+            const walls = Composite.allBodies(engine.world).filter(body => body.label === 'wall');
+            Composite.remove(engine.world, walls);
+
+            // Recreate walls with new dimensions
+            createWalls();
+        }
+
+        // Generate a random fruit for the next drop
+        function generateNextFruit() {
+            // For the first few drops, ensure smaller fruits
+            if (engine.world.bodies.filter(b => b.label === 'fruit').length < 5) {
+                nextFruitTypeIndex = Math.floor(Math.random() * 3); // Cherry, Strawberry, Grape
+            } else {
+                nextFruitTypeIndex = Math.floor(Math.random() * (FRUIT_TYPES.length / 3)); // Random from smaller fruits
+            }
+            nextFruitNameElement.textContent = FRUIT_TYPES[nextFruitTypeIndex].name;
+            updateDropIndicator();
+        }
+
+        // Update the visual indicator for the next fruit to drop
+        function updateDropIndicator() {
+            const fruitType = FRUIT_TYPES[nextFruitTypeIndex];
+            dropIndicatorFruit.style.width = `${fruitType.radius * 2}px`;
+            dropIndicatorFruit.style.height = `${fruitType.radius * 2}px`;
+            dropIndicatorFruit.style.backgroundColor = fruitType.color;
+        }
+
+        // Drop a fruit at the given x-coordinate
+        function dropFruit(x) {
+            if (isGameOver || isDropping) return;
 
             isDropping = true;
-            if (soundEnabled) dropSound.play();
+            const fruitType = FRUIT_TYPES[nextFruitTypeIndex];
+            const fruitRadius = fruitType.radius;
+            const fruitColor = fruitType.color;
+            const fruitValue = fruitType.value;
 
-            // After a short delay, reset isDropping and generate next fruit
+            // Create a new fruit body
+            const fruit = Bodies.circle(x, FRUIT_DROP_Y, fruitRadius, {
+                restitution: 0.3, // Bounciness
+                friction: 0.5,    // Friction
+                density: 0.001,   // Weight
+                label: 'fruit',
+                collisionFilter: {
+                    group: 0 // Default group, allows all collisions
+                },
+                render: {
+                    fillStyle: fruitColor
+                },
+                fruitTypeIndex: nextFruitTypeIndex, // Custom property to store fruit type
+                value: fruitValue
+            });
+
+            Composite.add(engine.world, fruit);
+            currentFruit = fruit; // Keep track of the fruit being dropped
+
+            // After a short delay, allow next drop
             setTimeout(() => {
                 isDropping = false;
-                if (currentDroppingFruit) {
-                    currentDroppingFruit.body.isBeingDropped = false; // Mark as no longer controlled
-                    currentDroppingFruit = null;
-                }
                 generateNextFruit();
-            }, 200); // Small delay to prevent rapid drops
+            }, 500); // Short delay to prevent rapid drops
         }
 
-        /**
-         * Handles Matter.js collision events for merging.
-         * @param {Object} event - Matter.js collision event.
-         */
+        // Handle fruit merging on collision
         function handleCollision(event) {
             const pairs = event.pairs;
 
@@ -674,333 +377,140 @@
                 const bodyA = pair.bodyA;
                 const bodyB = pair.bodyB;
 
-                // Ensure both bodies are fruits and not already merged
-                if (bodyA.collisionFilter.category === CATEGORY_FRUIT && bodyB.collisionFilter.category === CATEGORY_FRUIT &&
-                    !bodyA.isStatic && !bodyB.isStatic &&
-                    !bodyA.isSensor && !bodyB.isSensor && // Not a sensor (like the game over line)
-                    !bodyA.fruitMerged && !bodyB.fruitMerged) {
+                // Check if both bodies are fruits and are of the same type
+                if (bodyA.label === 'fruit' && bodyB.label === 'fruit' &&
+                    bodyA.fruitTypeIndex === bodyB.fruitTypeIndex &&
+                    bodyA.fruitTypeIndex < FRUIT_TYPES.length - 1) { // Ensure it's not the last fruit type
 
-                    // Check if they are the same type of fruit
-                    if (bodyA.fruitTypeIndex === bodyB.fruitTypeIndex) {
-                        // Check if they are relatively settled (low velocity)
-                        const velA = Matter.Vector.magnitude(bodyA.velocity);
-                        const velB = Matter.Vector.magnitude(bodyB.velocity);
-
-                        // Only merge if velocities are low and they are touching
-                        if (velA < 1 && velB < 1 && pair.isActive) { // pair.isActive means they are currently overlapping/touching
-                            // Add to merge queue to process after physics step
-                            mergeQueue.push([bodyA, bodyB]);
-                        }
+                    // Prevent merging the same fruits multiple times in one collision event
+                    if (bodyA.merged || bodyB.merged) {
+                        return;
                     }
-                }
-            });
-        }
 
-        /**
-         * Processes the merge queue, creating new fruits and removing old ones.
-         */
-        function processMerges() {
-            // Sort merge queue by type index to prioritize larger merges
-            mergeQueue.sort((a, b) => a[0].fruitTypeIndex - b[0].fruitTypeIndex);
-
-            // Use a Set to track bodies that have been merged in this step
-            const mergedBodiesInThisStep = new Set();
-
-            while (mergeQueue.length > 0) {
-                const [bodyA, bodyB] = mergeQueue.shift();
-
-                // Check if either body has already been merged in this step
-                if (mergedBodiesInThisStep.has(bodyA.id) || mergedBodiesInThisStep.has(bodyB.id)) {
-                    continue;
-                }
-
-                // Double check if they are still valid for merge (same type, not previously merged)
-                if (bodyA.fruitTypeIndex === bodyB.fruitTypeIndex && !bodyA.fruitMerged && !bodyB.fruitMerged) {
                     // Mark fruits as merged
-                    bodyA.fruitMerged = true;
-                    bodyB.fruitMerged = true;
-                    mergedBodiesInThisStep.add(bodyA.id);
-                    mergedBodiesInThisStep.add(bodyB.id);
+                    bodyA.merged = true;
+                    bodyB.merged = true;
 
-                    // Remove from our custom fruits array
-                    fruits = fruits.filter(f => f.id !== bodyA.id && f.id !== bodyB.id);
+                    // Remove the two merged fruits
+                    Composite.remove(engine.world, [bodyA, bodyB]);
 
-                    // Remove from Matter.js world
-                    World.remove(world, [bodyA, bodyB]);
+                    // Calculate new fruit properties
+                    const newFruitTypeIndex = bodyA.fruitTypeIndex + 1;
+                    const newFruitType = FRUIT_TYPES[newFruitTypeIndex];
+                    const newFruitRadius = newFruitType.radius;
+                    const newFruitColor = newFruitType.color;
+                    const newFruitValue = newFruitType.value;
 
-                    // Play merge sound
-                    if (soundEnabled) {
-                        if (Math.random() < 0.5) mergeSound1.play();
-                        else mergeSound2.play();
-                    }
+                    // Calculate the midpoint for the new fruit
+                    const newX = (bodyA.position.x + bodyB.position.x) / 2;
+                    const newY = (bodyA.position.y + bodyB.position.y) / 2;
 
-                    // Create new fruit
-                    const newTypeIndex = bodyA.fruitTypeIndex + 1;
-                    if (newTypeIndex < FRUIT_SPECS.length) {
-                        const newFruitSpec = FRUIT_SPECS[newTypeIndex];
-                        const newX = (bodyA.position.x + bodyB.position.x) / 2;
-                        const newY = (bodyA.position.y + bodyB.position.y) / 2;
+                    // Create the new, larger fruit
+                    const newFruit = Bodies.circle(newX, newY, newFruitRadius, {
+                        restitution: 0.3,
+                        friction: 0.5,
+                        density: 0.001,
+                        label: 'fruit',
+                        render: {
+                            fillStyle: newFruitColor
+                        },
+                        fruitTypeIndex: newFruitTypeIndex,
+                        value: newFruitValue
+                    });
 
-                        const newBody = Bodies.circle(newX, newY, newFruitSpec.radius, {
-                            restitution: 0.7,
-                            friction: 0.001,
-                            density: 0.001,
-                            collisionFilter: {
-                                category: CATEGORY_FRUIT
-                            },
-                            label: `fruit-${newTypeIndex}`
-                        });
-                        newBody.fruitTypeIndex = newTypeIndex; // Store type index on Matter.js body
-                        newBody.fruitMerged = false; // New fruit is not merged
+                    Composite.add(engine.world, newFruit);
 
-                        World.add(world, newBody);
-                        fruits.push(new GameFruit(newBody, newTypeIndex));
-
-                        // Update score
-                        score += newFruitSpec.score;
-
-                        // Combo system
-                        const currentTime = performance.now();
-                        if (currentTime - lastMergeTime < COMBO_THRESHOLD) {
-                            comboCount++;
-                            score += comboCount * 10; // Bonus points for combo
-                            scorePopups.push(new ScorePopup(newX, newY - newFruitSpec.radius - 20, `+${newFruitSpec.score} COMBO! x${comboCount}`));
-                        } else {
-                            comboCount = 0; // Reset combo
-                            scorePopups.push(new ScorePopup(newX, newY - newFruitSpec.radius - 20, `+${newFruitSpec.score}`));
-                        }
-                        lastMergeTime = currentTime;
-
-                        // Particle effects
-                        for (let i = 0; i < 10; i++) {
-                            const angle = Math.random() * Math.PI * 2;
-                            const speed = Math.random() * 5 + 2;
-                            const dx = Math.cos(angle) * speed;
-                            const dy = Math.sin(angle) * speed;
-                            particles.push(new Particle(newX, newY, 'white', Math.random() * 3 + 1, dx, dy));
-                        }
-
-                        // Check for win condition (watermelon created)
-                        if (newFruitSpec.emoji === '🍉') {
-                            triggerWin();
-                        }
-                    }
-                }
-            }
-            updateUI();
-        }
-
-
-        /**
-         * Checks if the game is over (fruits piled up too high).
-         */
-        function checkGameOver() {
-            let anyFruitAboveLine = false;
-            const now = performance.now();
-
-            // Iterate through all fruits (Matter.js bodies)
-            Composite.allBodies(world).forEach(body => {
-                if (body.collisionFilter.category === CATEGORY_FRUIT && !body.isStatic && !body.isBeingDropped) {
-                    if (body.position.y - body.circleRadius < gameOverLineY) {
-                        anyFruitAboveLine = true;
-                        if (!fruitsAboveLine.has(body.id)) {
-                            fruitsAboveLine.set(body.id, now); // Start tracking time
-                        } else if (now - fruitsAboveLine.get(body.id) >= GAME_OVER_SUSTAINED_TIME) {
-                            triggerGameOver("Game Over! Fruits piled too high.");
-                            return; // Exit early if game over
-                        }
-                    } else {
-                        // If fruit is no longer above the line, remove it from tracking
-                        fruitsAboveLine.delete(body.id);
-                    }
+                    // Update score
+                    score += newFruitValue;
+                    scoreElement.textContent = score;
                 }
             });
+        }
 
-            // If no fruits are above the line, clear the map
-            if (!anyFruitAboveLine) {
-                fruitsAboveLine.clear();
+        // Check for game over condition
+        function checkGameOver() {
+            if (isGameOver) return;
+
+            const fruits = Composite.allBodies(engine.world).filter(body => body.label === 'fruit');
+            for (const fruit of fruits) {
+                // If the center of any fruit goes above the game over line
+                if (fruit.position.y - fruit.circleRadius < GAME_OVER_Y) {
+                    endGame();
+                    break;
+                }
             }
         }
 
-        /**
-         * Triggers the game over state.
-         * @param {string} message - The message to display on the game over screen.
-         */
-        function triggerGameOver(message) {
-            if (gameState === 'gameOver') return; // Prevent multiple triggers
-            gameState = 'gameOver';
-            Engine.pause(engine); // Pause Matter.js engine
-
-            gameOverMessage.textContent = message;
-            finalScoreDisplay.textContent = score;
-            if (score > highScore) {
-                highScore = score;
-                localStorage.setItem('fruitClashHighScore', highScore);
-                highScoreDisplay.textContent = highScore; // Update high score on start screen
-            }
-            showScreen('gameOver');
-            if (soundEnabled) {
-                bgMusic.pause();
-                gameOverSound.play();
-            }
+        // End the game
+        function endGame() {
+            isGameOver = true;
+            Runner.stop(runner);
+            gameOverOverlay.classList.add('visible');
+            removeEventListeners();
         }
 
-        /**
-         * Triggers the win state.
-         */
-        function triggerWin() {
-            if (gameState === 'gameOver') return; // Prevent multiple triggers
-            gameState = 'gameOver';
-            Engine.pause(engine); // Pause Matter.js engine
-
-            gameOverMessage.textContent = "You Win! You created a Watermelon! 🎉";
-            finalScoreDisplay.textContent = score;
-            if (score > highScore) {
-                highScore = score;
-                localStorage.setItem('fruitClashHighScore', highScore);
-                highScoreDisplay.textContent = highScore;
-            }
-            showScreen('gameOver');
-            if (soundEnabled) {
-                bgMusic.pause();
-                winSound.play();
-            }
+        // Restart the game
+        function restartGame() {
+            // Clear all bodies from the world
+            Composite.clear(engine.world);
+            // Re-initialize the game
+            initGame();
         }
 
-        /**
-         * Manages screen visibility.
-         * @param {string} screenName - The name of the screen to show ('start', 'game', 'instructions', 'pause', 'gameOver').
-         */
-        function showScreen(screenName) {
-            startScreen.classList.add('hidden');
-            gameScreen.classList.add('hidden');
-            instructionsModal.classList.add('hidden');
-            pauseOverlay.classList.add('hidden');
-            gameOverOverlay.classList.add('hidden');
+        // Add event listeners for dropping fruits and moving the drop line
+        function addEventListeners() {
+            // Mouse/Touch move to control drop line
+            const updateDropPosition = (clientX) => {
+                const rect = gameCanvas.getBoundingClientRect();
+                let x = clientX - rect.left; // X position relative to canvas
 
-            switch (screenName) {
-                case 'start':
-                    startScreen.classList.remove('hidden');
-                    break;
-                case 'game':
-                    gameScreen.classList.remove('hidden');
-                    break;
-                case 'instructions':
-                    instructionsModal.classList.remove('hidden');
-                    break;
-                case 'pause':
-                    pauseOverlay.classList.remove('hidden');
-                    break;
-                case 'gameOver':
-                    gameOverOverlay.classList.remove('hidden');
-                    break;
-            }
+                // Clamp x to canvas boundaries, considering fruit radius
+                const fruitRadius = FRUIT_TYPES[nextFruitTypeIndex].radius;
+                x = Math.max(fruitRadius, Math.min(gameCanvas.width - fruitRadius, x));
+
+                dropLine.style.left = `${x / gameCanvas.width * 100}%`;
+                dropIndicatorFruit.style.left = `${x / gameCanvas.width * 100}%`;
+                dropIndicatorFruit.style.top = `${FRUIT_DROP_Y - fruitRadius}px`; // Position above drop line
+            };
+
+            const handlePointerMove = (e) => {
+                if (isGameOver) return;
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                updateDropPosition(clientX);
+            };
+
+            const handlePointerDown = (e) => {
+                if (isGameOver) return;
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const rect = gameCanvas.getBoundingClientRect();
+                const dropX = clientX - rect.left;
+                dropFruit(dropX);
+            };
+
+            gameCanvas.addEventListener('mousemove', handlePointerMove);
+            gameCanvas.addEventListener('touchmove', handlePointerMove);
+            gameCanvas.addEventListener('mousedown', handlePointerDown);
+            gameCanvas.addEventListener('touchstart', handlePointerDown);
+
+            restartButton.addEventListener('click', restartGame);
         }
 
-        /**
-         * Toggles background music and sound icons.
-         */
-        function toggleSound() {
-            soundEnabled = !soundEnabled;
-            if (soundEnabled) {
-                bgMusic.play().catch(e => console.log("Music auto-play prevented:", e));
-                soundOnIcon.classList.remove('hidden');
-                soundOffIcon.classList.add('hidden');
-            } else {
-                bgMusic.pause();
-                soundOnIcon.classList.add('hidden');
-                soundOffIcon.classList.remove('hidden');
-            }
-            if (soundEnabled) buttonClickSound.play(); // Play click sound for toggle
+        // Remove event listeners (called on game over)
+        function removeEventListeners() {
+            gameCanvas.removeEventListener('mousemove', handlePointerMove);
+            gameCanvas.removeEventListener('touchmove', handlePointerMove);
+            gameCanvas.removeEventListener('mousedown', handlePointerDown);
+            gameCanvas.removeEventListener('touchstart', handlePointerDown);
         }
-
-        // Event Listeners
-        playButton.addEventListener('click', () => {
-            if (soundEnabled) buttonClickSound.play();
-            gameState = 'playing';
-            initializeGame();
-            Engine.run(engine); // Start Matter.js engine
-            bgMusic.play().catch(e => console.log("Music auto-play prevented:", e));
-            showScreen('game');
-        });
-
-        howToPlayButton.addEventListener('click', () => {
-            if (soundEnabled) buttonClickSound.play();
-            showScreen('instructions');
-        });
-
-        closeInstructionsButton.addEventListener('click', () => {
-            if (soundEnabled) buttonClickSound.play();
-            showScreen('start');
-        });
-
-        pauseButton.addEventListener('click', () => {
-            if (soundEnabled) buttonClickSound.play();
-            if (gameState === 'playing') {
-                gameState = 'paused';
-                Engine.pause(engine); // Pause Matter.js
-                bgMusic.pause();
-                showScreen('pause');
-            }
-        });
-
-        resumeButton.addEventListener('click', () => {
-            if (soundEnabled) buttonClickSound.play();
-            if (gameState === 'paused') {
-                gameState = 'playing';
-                Engine.run(engine); // Resume Matter.js
-                if (soundEnabled) bgMusic.play().catch(e => console.log("Music auto-play prevented:", e));
-                showScreen('game');
-            }
-        });
-
-        quitButton.addEventListener('click', () => {
-            if (soundEnabled) buttonClickSound.play();
-            gameState = 'start';
-            Engine.pause(engine); // Ensure engine is paused
-            bgMusic.pause();
-            showScreen('start');
-            updateUI(); // Update high score on start screen
-        });
-
-        restartButton.addEventListener('click', () => {
-            if (soundEnabled) buttonClickSound.play();
-            gameState = 'playing';
-            initializeGame();
-            Engine.run(engine); // Start Matter.js engine
-            bgMusic.play().catch(e => console.log("Music auto-play prevented:", e));
-            showScreen('game');
-        });
-
-        gameOverQuitButton.addEventListener('click', () => {
-            if (soundEnabled) buttonClickSound.play();
-            gameState = 'start';
-            Engine.pause(engine); // Ensure engine is paused
-            bgMusic.pause();
-            showScreen('start');
-            updateUI(); // Update high score on start screen
-        });
-
-        soundToggleButton.addEventListener('click', toggleSound);
-
-        // Canvas input for dropping fruits
-        gameCanvas.addEventListener('mousedown', handleInput);
-        gameCanvas.addEventListener('touchstart', handleInput, { passive: false });
-
-        // Handle window resize to adjust canvas size and redraw
-        window.addEventListener('resize', () => {
-            calculateCanvasSize();
-            // Matter.js render might need to be re-initialized if you were using it
-            // For custom drawing, just redrawing is enough.
-        });
 
         // Initial setup on window load
         window.onload = function() {
-            calculateCanvasSize();
-            showScreen('start');
-            updateUI(); // Display initial high score
-            renderLoop(); // Start the custom rendering loop
-            // Play background music on first user interaction (handled by button clicks now)
+            adjustCanvasSize(); // Set initial canvas size
+            initGame(); // Initialize the game
+            window.addEventListener('resize', () => {
+                adjustCanvasSize();
+                updateWalls(); // Re-adjust walls on resize
+            });
         };
     </script>
 </body>
