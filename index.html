@@ -22,7 +22,7 @@
             -moz-user-select: none;
             -ms-user-select: none;
             user-select: none;
-            touch-action: none;
+            touch-action: none; /* Prevents default touch actions like scrolling/zooming */
         }
 
         .game-container {
@@ -30,11 +30,11 @@
             background-color: #ffffff;
             border-radius: 20px;
             box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
-            display: flex;
-            flex-direction: row;
+            display: grid; /* Use CSS Grid for flexible layout */
+            grid-template-columns: auto 1fr auto; /* Left sidebar, game area, right sidebar */
             width: 95vw;
             height: 95vh;
-            max-width: 450px;
+            max-width: 900px; /* Increased max-width to accommodate sidebars */
             max-height: 800px;
             box-sizing: border-box;
             overflow: hidden;
@@ -42,7 +42,6 @@
 
         .game-area {
             position: relative;
-            flex-grow: 1;
             background: linear-gradient(to bottom, #d1f7e0, #a7f3d0);
             border-radius: 12px;
             overflow: hidden;
@@ -52,25 +51,36 @@
             justify-content: flex-end;
             padding: 20px;
             box-sizing: border-box;
+            grid-column: 2; /* Place game area in the middle column */
         }
 
         canvas {
             display: block;
             touch-action: none;
             width: 100%;
-            height: calc(100% - 60px);
+            height: calc(100% - 60px); /* Account for top bar */
         }
 
         .sidebar {
-            width: 120px;
             background-color: #f8fafc;
             padding: 10px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            border-left: 1px solid #cbd5e0;
             box-sizing: border-box;
             overflow-y: auto;
+        }
+
+        .left-sidebar {
+            width: 150px; /* Width for the fruit list sidebar */
+            border-right: 1px solid #cbd5e0;
+            grid-column: 1; /* Place in the first column */
+        }
+
+        .right-sidebar {
+            width: 150px; /* Width for power-ups, gold, music sidebar */
+            border-left: 1px solid #cbd5e0;
+            grid-column: 3; /* Place in the third column */
         }
 
         .sidebar-section {
@@ -100,6 +110,7 @@
             margin-bottom: 5px;
             font-size: 0.9rem;
             color: #2d3748;
+            transition: opacity 0.3s ease; /* Smooth transition for opacity changes */
         }
 
         .fruit-list-item span {
@@ -173,6 +184,7 @@
             border-top-left-radius: 20px;
             border-top-right-radius: 20px;
             box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+            grid-column: 1 / -1; /* Span across all columns */
         }
 
         .top-bar-item {
@@ -354,18 +366,26 @@
         }
 
 
-        @media (max-width: 600px) {
+        @media (max-width: 768px) { /* Adjusted breakpoint for mobile layout */
             .game-container {
-                flex-direction: column;
+                grid-template-columns: 1fr; /* Single column on mobile */
+                grid-template-rows: auto 1fr auto auto; /* Top bar, game, left sidebar, right sidebar */
                 width: 98vw;
                 height: 98vh;
                 max-width: none;
                 max-height: none;
             }
 
+            .top-bar {
+                grid-column: 1; /* Span full width */
+                grid-row: 1; /* First row */
+                border-radius: 20px 20px 0 0;
+            }
+
             .game-area {
-                flex-grow: 1;
-                height: calc(100% - 100px);
+                grid-column: 1; /* Span full width */
+                grid-row: 2; /* Second row */
+                height: calc(100% - 60px); /* Adjust height for top bar */
                 padding-bottom: 0;
             }
 
@@ -373,21 +393,33 @@
                 height: 100%;
             }
 
-            .sidebar {
+            .left-sidebar, .right-sidebar {
                 width: 100%;
-                height: 140px;
+                height: auto; /* Allow content to dictate height */
                 flex-direction: row;
                 flex-wrap: wrap;
                 justify-content: space-around;
                 align-items: center;
                 border-left: none;
-                border-top: 1px solid #cbd5e0;
+                border-right: none;
                 padding: 10px 5px;
                 overflow-y: hidden;
             }
 
+            .left-sidebar {
+                grid-row: 3; /* Third row */
+                border-top: 1px solid #cbd5e0;
+            }
+
+            .right-sidebar {
+                grid-row: 4; /* Fourth row */
+                border-top: 1px solid #cbd5e0;
+                border-bottom-left-radius: 20px;
+                border-bottom-right-radius: 20px;
+            }
+
             .sidebar-section {
-                width: 48%;
+                width: 48%; /* Adjust for two columns within sidebar */
                 margin-bottom: 10px;
                 border-bottom: none;
                 padding-bottom: 0;
@@ -400,11 +432,7 @@
                 flex-grow: 1;
                 max-width: 150px;
             }
-            .top-bar {
-                border-bottom-left-radius: 0;
-                border-bottom-right-radius: 0;
-                border-radius: 20px 20px 0 0;
-            }
+
             .game-over-overlay {
                 border-radius: 20px 20px 0 0;
             }
@@ -432,6 +460,14 @@
             <div class="top-bar-item">Hold</div>
         </div>
 
+        <!-- Left Sidebar for Fruits -->
+        <div class="sidebar left-sidebar">
+            <div class="sidebar-section">
+                <div class="sidebar-title">Fruits</div>
+                <div id="fruitList"></div>
+            </div>
+        </div>
+
         <div class="game-area">
             <canvas id="gameCanvas"></canvas>
             <div class="drop-line" id="dropLine"></div>
@@ -443,17 +479,13 @@
             </div>
         </div>
 
-        <div class="sidebar">
+        <!-- Right Sidebar for Power-Ups, Gold, Music -->
+        <div class="sidebar right-sidebar">
             <div class="sidebar-section">
                 <div class="sidebar-title">Power-Ups</div>
                 <button class="sidebar-button" id="makeBombButton">Make Bomb<br><span class="cost">(200 Gold)</span></button>
                 <button class="sidebar-button" id="pickNextButton">Pick Next<br><span class="cost">(100 Gold)</span></button>
                 <button class="sidebar-button" id="popItemsButton">Pop Items<br><span class="cost">(300 Gold)</span></button>
-            </div>
-
-            <div class="sidebar-section">
-                <div class="sidebar-title">Fruits</div>
-                <div id="fruitList"></div>
             </div>
 
             <div class="sidebar-section">
@@ -475,6 +507,7 @@
     </div>
 
     <script>
+        // Matter.js modules
         const Engine = Matter.Engine,
               Render = Matter.Render,
               Runner = Matter.Runner,
@@ -482,12 +515,14 @@
               Composite = Matter.Composite,
               Events = Matter.Events;
 
-        const BASE_CANVAS_WIDTH = 360;
-        const BASE_CANVAS_HEIGHT = 600;
+        // Game constants
+        const BASE_CANVAS_WIDTH = 360; // Base width for scaling fruit sizes
+        const BASE_CANVAS_HEIGHT = 600; // Base height (not directly used for scaling but for context)
         const WALL_THICKNESS = 20;
-        const FRUIT_DROP_Y_OFFSET = 60;
-        const GAME_OVER_Y_OFFSET = 120;
+        const FRUIT_DROP_Y_OFFSET = 60; // Y-coordinate where fruits are dropped from
+        const GAME_OVER_Y_OFFSET = 120; // Y-coordinate defining the game over line
 
+        // Fruit definitions: name, radius, color, value (gold), and emoji
         const FRUIT_TYPES = [
             { name: "Cherry", radius: 15, color: "#ef4444", value: 10, emoji: "🍒" },
             { name: "Strawberry", radius: 20, color: "#FF4500", value: 20, emoji: "🍓" },
@@ -502,23 +537,27 @@
             { name: "Watermelon", radius: 65, color: "#be123c", value: 110, emoji: "🍉" }
         ];
 
+        // Power-up costs in gold
         const POWER_UP_COSTS = {
             makeBomb: 200,
             pickNext: 100,
             popItems: 300
         };
 
+        // Game state variables
         let engine = null;
         let render = null;
         let runner = null;
-        let nextFruitTypeIndex = 0;
+        let nextFruitTypeIndex = 0; // Index of the next fruit to drop
         let gold = 0;
         let isGameOver = false;
-        let isDropping = false;
+        let isDropping = false; // Flag to prevent rapid drops
         let currentCanvasWidth;
         let currentCanvasHeight;
-        let activePowerUp = null;
+        let activePowerUp = null; // Stores the currently active power-up (e.g., 'makeBomb', 'popItems')
+        let discoveredFruits = new Set(); // Tracks fruits that have been merged/unlocked
 
+        // Tone.js audio synths
         let dropSynth;
         let mergeSynth;
         let gameOverSynth;
@@ -528,16 +567,18 @@
         let backgroundMusic;
         let backgroundMusicSynth;
 
+        // DOM element references
         let gameCanvas = document.getElementById('gameCanvas');
         const goldElement = document.getElementById('gold');
         const gameOverOverlay = document.getElementById('gameOverOverlay');
         const restartButton = document.getElementById('restartButton');
         const dropLine = document.getElementById('dropLine');
         const dropIndicatorFruit = document.getElementById('dropIndicatorFruit');
-        const gameContainer = document.querySelector('.game-container');
+        const gameContainer = document.querySelector('.game-container'); // Reference to the main game container
         const gameOverLine = document.getElementById('gameOverLine');
-        const fruitListContainer = document.getElementById('fruitList');
+        const fruitListContainer = document.getElementById('fruitList'); // Container for the fruit list
 
+        // Power-up and gold control buttons/inputs
         const makeBombButton = document.getElementById('makeBombButton');
         const pickNextButton = document.getElementById('pickNextButton');
         const popItemsButton = document.getElementById('popItemsButton');
@@ -548,11 +589,21 @@
         const toggleMusicButton = document.getElementById('toggleMusicButton');
         const musicVolumeSlider = document.getElementById('musicVolumeSlider');
 
+        /**
+         * Calculates the scaled radius of a fruit based on the current canvas width.
+         * This ensures fruits appear proportionally sized on different screen sizes.
+         * @param {number} index - The index of the fruit type in FRUIT_TYPES.
+         * @returns {number} The scaled radius.
+         */
         function getScaledFruitRadius(index) {
             const baseRadius = FRUIT_TYPES[index].radius;
             return baseRadius * (currentCanvasWidth / BASE_CANVAS_WIDTH);
         }
 
+        /**
+         * Adjusts the canvas size to fit the parent container and updates Matter.js render options.
+         * Also updates wall positions and the drop indicator.
+         */
         function adjustCanvasSize() {
             const gameArea = document.querySelector('.game-area');
             currentCanvasWidth = gameArea.clientWidth;
@@ -564,111 +615,148 @@
             if (render) {
                 render.options.width = currentCanvasWidth;
                 render.options.height = currentCanvasHeight;
+                // Set pixel ratio for sharper rendering on high-DPI screens
                 Render.setPixelRatio(render, window.devicePixelRatio || 1);
             }
 
+            // Update walls if the engine exists and has bodies (i.e., game has started)
             if (engine && engine.world.bodies.length > 0) {
                 updateWalls();
             }
 
-            updateDropIndicator();
+            updateDropIndicator(); // Update position of the next fruit indicator
 
+            // Position the game over line
             gameOverLine.style.top = `${GAME_OVER_Y_OFFSET}px`;
         }
 
+        /**
+         * Initializes all Tone.js audio synths and sets up the background music loop.
+         * Sets initial volume and adds event listener for the volume slider.
+         */
         function initAudio() {
+            // Synth for fruit dropping sound
             dropSynth = new Tone.PolySynth(Tone.Synth, {
                 oscillator: { type: "triangle" },
                 envelope: { attack: 0.005, decay: 0.1, sustain: 0.05, release: 0.1 }
             }).toDestination();
 
+            // Synth for fruit merging sound
             mergeSynth = new Tone.Synth({
                 oscillator: { type: "sine" },
                 envelope: { attack: 0.01, decay: 0.2, sustain: 0.1, release: 0.2 }
             }).toDestination();
 
+            // Synth for game over sound
             gameOverSynth = new Tone.Synth({
                 oscillator: { type: "sawtooth" },
                 envelope: { attack: 0.05, decay: 0.5, sustain: 0.2, release: 0.8 }
             }).toDestination();
 
+            // Synth for power-up activation sound
             powerUpActivateSynth = new Tone.Synth({
                 oscillator: { type: "square" },
                 envelope: { attack: 0.01, decay: 0.1, sustain: 0.05, release: 0.1 }
             }).toDestination();
 
+            // Synth for power-up usage sound
             powerUpUseSynth = new Tone.Synth({
                 oscillator: { type: "triangle" },
                 envelope: { attack: 0.01, decay: 0.15, sustain: 0.08, release: 0.15 }
             }).toDestination();
 
+            // Synth for error sounds (e.g., not enough gold)
             errorSynth = new Tone.Synth({
                 oscillator: { type: "sawtooth" },
                 envelope: { attack: 0.001, decay: 0.1, sustain: 0.01, release: 0.1 }
             }).toDestination();
 
+            // PolySynth for background music (can play multiple notes simultaneously)
             backgroundMusicSynth = new Tone.PolySynth(Tone.Synth, {
                 oscillator: { type: "sine" },
                 envelope: { attack: 0.5, decay: 1, sustain: 0.8, release: 1 }
             }).toDestination();
 
+            // Background music loop
             backgroundMusic = new Tone.Loop(time => {
-                const notes = ["C4", "E4", "G4", "A4"];
+                const notes = ["C4", "E4", "G4", "A4"]; // Simple chord progression
                 const note = notes[Math.floor(Math.random() * notes.length)];
                 backgroundMusicSynth.triggerAttackRelease(note, "2n", time);
-            }, "1n").start(0);
-            backgroundMusic.volume.value = -10;
-            backgroundMusic.mute = true;
+            }, "1n").start(0); // Start the loop immediately
+            backgroundMusic.volume.value = -10; // Set initial volume (in dB)
+            backgroundMusic.mute = true; // Start muted
 
-            musicVolumeSlider.value = backgroundMusic.volume.value;
-            musicVolumeSlider.addEventListener('input', (e) => {
-                backgroundMusic.volume.value = parseFloat(e.target.value);
-            });
+            // --- FIX for TypeError: Cannot set properties of undefined (setting 'value') ---
+            // Ensure musicVolumeSlider exists before trying to set its value
+            if (musicVolumeSlider) {
+                musicVolumeSlider.value = backgroundMusic.volume.value; // Set slider to initial volume
+                musicVolumeSlider.addEventListener('input', (e) => {
+                    // Update background music volume when slider is moved
+                    backgroundMusic.volume.value = parseFloat(e.target.value);
+                });
+            } else {
+                console.error("Error: musicVolumeSlider element not found. Music volume control may not function.");
+            }
         }
 
+        /**
+         * Custom rendering function to draw fruit emojis on top of Matter.js bodies.
+         * This runs after each Matter.js render update.
+         * @param {object} event - The Matter.js render event object.
+         */
         function drawEmojis(event) {
             const context = render.context;
             const bodies = Composite.allBodies(engine.world);
 
-            context.save();
-            context.clearRect(0, 0, currentCanvasWidth, currentCanvasHeight);
+            context.save(); // Save the current canvas state
+            context.clearRect(0, 0, currentCanvasWidth, currentCanvasHeight); // Clear the canvas for redrawing
 
             for (let i = 0; i < bodies.length; i++) {
                 const body = bodies[i];
 
+                // Only draw for fruit and bomb bodies
                 if (body.label === 'fruit' || body.label === 'bomb') {
                     const fruitType = FRUIT_TYPES[body.fruitTypeIndex];
                     const scaledRadius = getScaledFruitRadius(body.fruitTypeIndex);
 
+                    // Draw the circle background for the fruit
                     context.beginPath();
                     context.arc(body.position.x, body.position.y, scaledRadius, 0, 2 * Math.PI);
                     context.fillStyle = body.render.fillStyle;
                     context.fill();
 
+                    // Draw the emoji if available
                     if (fruitType && fruitType.emoji) {
-                        context.font = `${scaledRadius * 1.2}px Arial`;
+                        context.font = `${scaledRadius * 1.2}px Arial`; // Scale font size with fruit radius
                         context.textAlign = 'center';
                         context.textBaseline = 'middle';
-                        context.fillStyle = '#000000';
+                        context.fillStyle = '#000000'; // Emoji color (can be transparent for actual emoji)
                         context.fillText(fruitType.emoji, body.position.x, body.position.y);
                     }
                 }
             }
-            context.restore();
+            context.restore(); // Restore the canvas state
         }
 
+        /**
+         * Initializes or restarts the game.
+         * Clears existing game state, sets up Matter.js engine, render, and runner,
+         * creates walls, generates the first fruit, and attaches event listeners.
+         */
         function initGame() {
+            // Stop and clear previous Matter.js instances if they exist
             if (runner) {
                 Runner.stop(runner);
             }
             if (engine) {
                 Events.off(engine, 'collisionStart', handleCollision);
                 Events.off(engine, 'afterUpdate', checkGameOver);
-                Composite.clear(engine.world);
+                Composite.clear(engine.world); // Clear all bodies from the world
             }
             if (render) {
                 Events.off(render, 'afterRender', drawEmojis);
                 Render.stop(render);
+                // Recreate canvas to clear any lingering Matter.js rendering
                 const gameArea = document.querySelector('.game-area');
                 const oldCanvas = document.getElementById('gameCanvas');
                 if (oldCanvas) {
@@ -677,9 +765,10 @@
                 const newCanvas = document.createElement('canvas');
                 newCanvas.id = 'gameCanvas';
                 gameArea.prepend(newCanvas);
-                gameCanvas = newCanvas;
+                gameCanvas = newCanvas; // Update the global reference
             }
 
+            // Reset game state variables
             gold = 0;
             isGameOver = false;
             isDropping = false;
@@ -690,54 +779,74 @@
             redeemMessage.textContent = '';
             redeemCodeInput.value = '';
 
-            engine = Engine.create();
-            engine.gravity.y = 1;
+            // Initialize discovered fruits (first few types are initially known)
+            discoveredFruits.clear();
+            for (let i = 0; i < Math.min(3, FRUIT_TYPES.length); i++) {
+                discoveredFruits.add(FRUIT_TYPES[i].name);
+            }
 
+            // Create new Matter.js engine
+            engine = Engine.create();
+            engine.gravity.y = 1; // Standard gravity
+
+            // Create new Matter.js renderer
             render = Render.create({
                 canvas: gameCanvas,
                 engine: engine,
                 options: {
                     width: gameCanvas.width,
                     height: gameCanvas.height,
-                    wireframes: false,
-                    background: 'transparent',
+                    wireframes: false, // Render solid shapes
+                    background: 'transparent', // Let CSS handle background
                     pixelRatio: window.devicePixelRatio || 1
                 }
             });
 
+            // Create new Matter.js runner
             runner = Runner.create();
 
-            createWalls();
+            createWalls(); // Create the game boundaries
 
-            Render.run(render);
-            Runner.run(runner, engine);
+            Render.run(render); // Start rendering
+            Runner.run(runner, engine); // Start the physics engine
 
+            // Attach custom emoji drawing function
             Events.on(render, 'afterRender', drawEmojis);
 
-            generateNextFruit();
-            updateDropIndicator();
+            generateNextFruit(); // Determine the first fruit to drop
+            updateDropIndicator(); // Update the visual indicator for the next fruit
 
-            addEventListeners();
+            addEventListeners(); // Attach all necessary event listeners
 
+            // Attach Matter.js event listeners
             Events.on(engine, 'collisionStart', handleCollision);
             Events.on(engine, 'afterUpdate', checkGameOver);
+
+            renderFruitList(); // Initial render of the fruit list
         }
 
+        /**
+         * Creates the static walls for the game area.
+         * Removes existing walls before creating new ones to prevent duplicates on resize/restart.
+         */
         function createWalls() {
+            // Remove any existing walls
             const existingWalls = Composite.allBodies(engine.world).filter(body => body.label === 'wall');
             Composite.remove(engine.world, existingWalls);
 
             const canvasWidth = gameCanvas.width;
             const canvasHeight = gameCanvas.height;
 
+            // Add bottom wall
             Composite.add(engine.world, [
                 Bodies.rectangle(canvasWidth / 2, canvasHeight + WALL_THICKNESS / 2, canvasWidth, WALL_THICKNESS, {
-                    isStatic: true,
+                    isStatic: true, // Wall does not move
                     label: 'wall',
-                    render: { fillStyle: '#94a3b8' }
+                    render: { fillStyle: '#94a3b8' } // Tailwind gray-400
                 })
             ]);
 
+            // Add left and right walls
             Composite.add(engine.world, [
                 Bodies.rectangle(-WALL_THICKNESS / 2, canvasHeight / 2, WALL_THICKNESS, canvasHeight, {
                     isStatic: true,
@@ -752,76 +861,104 @@
             ]);
         }
 
+        /**
+         * Updates the positions of the walls. Called on canvas resize.
+         */
         function updateWalls() {
-            createWalls();
+            createWalls(); // Simply recreate them, as they are static.
         }
 
+        /**
+         * Determines the type of the next fruit to be dropped.
+         * Logic: first few fruits are simpler, then more variety as game progresses.
+         */
         function generateNextFruit() {
             const currentFruitCount = Composite.allBodies(engine.world).filter(b => b.label === 'fruit').length;
             if (currentFruitCount < 5) {
+                // For the first few fruits, limit to smaller types
                 nextFruitTypeIndex = Math.floor(Math.random() * 3);
             } else {
+                // As more fruits accumulate, allow larger types to appear
                 nextFruitTypeIndex = Math.floor(Math.random() * Math.min(FRUIT_TYPES.length, 5 + Math.floor(currentFruitCount / 10)));
+                // Ensure index doesn't exceed available fruit types
                 if (nextFruitTypeIndex >= FRUIT_TYPES.length) {
                     nextFruitTypeIndex = FRUIT_TYPES.length - 1;
                 }
             }
-            updateDropIndicator();
+            updateDropIndicator(); // Update the visual indicator
         }
 
+        /**
+         * Updates the visual indicator for the next fruit to be dropped.
+         * Sets its size, color, and emoji based on `nextFruitTypeIndex`.
+         */
         function updateDropIndicator() {
             const fruitType = FRUIT_TYPES[nextFruitTypeIndex];
             const scaledRadius = getScaledFruitRadius(nextFruitTypeIndex);
             dropIndicatorFruit.style.width = `${scaledRadius * 2}px`;
             dropIndicatorFruit.style.height = `${scaledRadius * 2}px`;
             dropIndicatorFruit.style.backgroundColor = fruitType.color;
+            // Set emoji and ensure vertical centering
             dropIndicatorFruit.innerHTML = `<span style="font-size: ${scaledRadius * 1.2}px; line-height: ${scaledRadius * 2}px;">${fruitType.emoji}</span>`;
+            // Position the indicator just above the drop line
             dropIndicatorFruit.style.top = `${FRUIT_DROP_Y_OFFSET - scaledRadius}px`;
         }
 
+        /**
+         * Drops a fruit (or bomb if power-up is active) into the game area.
+         * @param {number} x - The x-coordinate where the fruit should be dropped.
+         */
         function dropFruit(x) {
-            if (isGameOver || isDropping) return;
+            if (isGameOver || isDropping) return; // Prevent drops if game is over or another drop is in progress
 
-            isDropping = true;
+            isDropping = true; // Set dropping flag
             const fruitType = FRUIT_TYPES[nextFruitTypeIndex];
             const scaledRadius = getScaledFruitRadius(nextFruitTypeIndex);
             const fruitColor = fruitType.color;
             const fruitValue = fruitType.value;
 
-            const isBomb = (activePowerUp === 'makeBomb');
+            const isBomb = (activePowerUp === 'makeBomb'); // Check if 'make bomb' power-up is active
 
+            // Clamp drop position within canvas bounds
             const dropX = Math.max(scaledRadius, Math.min(currentCanvasWidth - scaledRadius, x));
             const dropY = FRUIT_DROP_Y_OFFSET;
 
-            const fruit = Bodies.circle(dropX, dropY, scaledRadius, {
-                restitution: 0.3,
-                friction: 0.5,
-                density: 0.001,
-                label: isBomb ? 'bomb' : 'fruit',
-                collisionFilter: { group: 0 },
-                render: { fillStyle: isBomb ? '#ff0000' : fruitColor },
-                fruitTypeIndex: nextFruitTypeIndex,
-                value: fruitValue
+            // Create a Matter.js circle body for the fruit/bomb
+            const body = Bodies.circle(dropX, dropY, scaledRadius, {
+                restitution: 0.3, // Bounciness
+                friction: 0.5, // Friction with other bodies/walls
+                density: 0.001, // Mass density
+                label: isBomb ? 'bomb' : 'fruit', // Label for collision detection
+                collisionFilter: { group: 0 }, // Allow all bodies to collide
+                render: { fillStyle: isBomb ? '#ff0000' : fruitColor }, // Red for bomb, fruit color otherwise
+                fruitTypeIndex: nextFruitTypeIndex, // Custom property to track fruit type
+                value: fruitValue // Custom property for gold value
             });
 
-            Composite.add(engine.world, fruit);
+            Composite.add(engine.world, body); // Add the body to the Matter.js world
 
             if (dropSynth) {
-                dropSynth.triggerAttackRelease("C4", "8n");
+                dropSynth.triggerAttackRelease("C4", "8n"); // Play drop sound
             }
 
             if (isBomb) {
-                activePowerUp = null;
-                updatePowerUpButtons();
-                if (powerUpUseSynth) powerUpUseSynth.triggerAttackRelease("G5", "8n");
+                activePowerUp = null; // Deactivate bomb power-up after use
+                updatePowerUpButtons(); // Update button states
+                if (powerUpUseSynth) powerUpUseSynth.triggerAttackRelease("G5", "8n"); // Play power-up use sound
             }
 
+            // Reset dropping flag and generate next fruit after a short delay
             setTimeout(() => {
                 isDropping = false;
                 generateNextFruit();
             }, 500);
         }
 
+        /**
+         * Handles collisions between Matter.js bodies.
+         * Detects fruit merges and bomb explosions.
+         * @param {object} event - The Matter.js collision event object.
+         */
         function handleCollision(event) {
             const pairs = event.pairs;
 
@@ -829,10 +966,12 @@
                 const bodyA = pair.bodyA;
                 const bodyB = pair.bodyB;
 
+                // Prevent processing bodies that are already marked for removal
                 if (bodyA.isRemoving || bodyB.isRemoving) {
                     return;
                 }
 
+                // Handle bomb-fruit collision
                 if (bodyA.label === 'bomb' && bodyB.label === 'fruit') {
                     explodeBomb(bodyA, bodyB);
                     return;
@@ -841,28 +980,32 @@
                     return;
                 }
 
+                // Handle fruit-fruit merge
                 if (bodyA.label === 'fruit' && bodyB.label === 'fruit' &&
-                    bodyA.fruitTypeIndex === bodyB.fruitTypeIndex &&
-                    bodyA.fruitTypeIndex < FRUIT_TYPES.length - 1) {
+                    bodyA.fruitTypeIndex === bodyB.fruitTypeIndex && // Same fruit type
+                    bodyA.fruitTypeIndex < FRUIT_TYPES.length - 1) { // Not the largest fruit type
 
+                    // Prevent multiple merges from a single collision event
                     if (bodyA.merged || bodyB.merged) {
                         return;
                     }
 
-                    bodyA.merged = true;
+                    bodyA.merged = true; // Mark bodies as merged
                     bodyB.merged = true;
 
-                    Composite.remove(engine.world, [bodyA, bodyB]);
+                    Composite.remove(engine.world, [bodyA, bodyB]); // Remove merged fruits
 
-                    const newFruitTypeIndex = bodyA.fruitTypeIndex + 1;
+                    const newFruitTypeIndex = bodyA.fruitTypeIndex + 1; // Next fruit in the sequence
                     const newFruitType = FRUIT_TYPES[newFruitTypeIndex];
                     const newScaledRadius = getScaledFruitRadius(newFruitTypeIndex);
                     const newFruitColor = newFruitType.color;
                     const newFruitValue = newFruitType.value;
 
+                    // Calculate new fruit position (midpoint of merged fruits)
                     const newX = (bodyA.position.x + bodyB.position.x) / 2;
                     const newY = (bodyA.position.y + bodyB.position.y) / 2;
 
+                    // Create the new, larger fruit
                     const newFruit = Bodies.circle(newX, newY, newScaledRadius, {
                         restitution: 0.3,
                         friction: 0.5,
@@ -873,46 +1016,63 @@
                         value: newFruitValue
                     });
 
-                    Composite.add(engine.world, newFruit);
+                    Composite.add(engine.world, newFruit); // Add new fruit to world
 
                     if (mergeSynth) {
-                        mergeSynth.triggerAttackRelease("E5", "4n");
+                        mergeSynth.triggerAttackRelease("E5", "4n"); // Play merge sound
                     }
 
-                    gold += newFruitValue;
-                    goldElement.textContent = gold;
-                    updatePowerUpButtons();
+                    gold += newFruitValue; // Add gold
+                    goldElement.textContent = gold; // Update gold display
+                    updatePowerUpButtons(); // Update power-up button states
+
+                    // Mark the new fruit type as discovered and update the list
+                    discoveredFruits.add(newFruitType.name);
+                    renderFruitList();
                 }
             });
         }
 
+        /**
+         * Handles the explosion of a bomb.
+         * Removes the bomb and nearby fruits.
+         * @param {object} bombBody - The Matter.js body of the bomb.
+         * @param {object} collidedFruit - The fruit body that the bomb initially collided with (can be null if triggered by popItems).
+         */
         function explodeBomb(bombBody, collidedFruit) {
-            if (bombBody.exploded) return;
+            if (bombBody.exploded) return; // Prevent multiple explosions from one bomb
 
             bombBody.exploded = true;
-            bombBody.isRemoving = true;
-            Composite.remove(engine.world, bombBody);
+            bombBody.isRemoving = true; // Mark for removal
+            Composite.remove(engine.world, bombBody); // Remove the bomb
 
-            const explosionRadius = bombBody.circleRadius * 3;
+            const explosionRadius = bombBody.circleRadius * 3; // Define explosion area
 
+            // Find all fruits and bombs within the explosion radius
             const affectedBodies = Composite.allBodies(engine.world).filter(body =>
                 (body.label === 'fruit' || body.label === 'bomb') &&
                 Matter.Vector.magnitude(Matter.Vector.sub(bombBody.position, body.position)) < explosionRadius &&
-                body.id !== bombBody.id
+                body.id !== bombBody.id // Don't remove the bomb itself again
             );
 
-            affectedBodies.forEach(body => body.isRemoving = true);
-            Composite.remove(engine.world, affectedBodies);
+            affectedBodies.forEach(body => body.isRemoving = true); // Mark affected bodies for removal
+            Composite.remove(engine.world, affectedBodies); // Remove affected bodies
 
-            if (powerUpUseSynth) powerUpUseSynth.triggerAttackRelease("C5", "0.5s");
+            if (powerUpUseSynth) powerUpUseSynth.triggerAttackRelease("C5", "0.5s"); // Play explosion sound
         }
 
+        /**
+         * Checks if any fruit has crossed the game over line.
+         * If so, ends the game.
+         */
         function checkGameOver() {
             if (isGameOver) return;
 
+            // Filter for active fruits and bombs
             const fruits = Composite.allBodies(engine.world).filter(body => body.label === 'fruit' || body.label === 'bomb');
             const gameOverLineY = GAME_OVER_Y_OFFSET;
 
+            // Check if any fruit's top edge is above the game over line
             for (const fruit of fruits) {
                 if (fruit.position.y - fruit.circleRadius < gameOverLineY) {
                     endGame();
@@ -921,87 +1081,115 @@
             }
         }
 
+        /**
+         * Ends the game, stops the physics engine, and displays the game over overlay.
+         */
         function endGame() {
             isGameOver = true;
-            Runner.stop(runner);
-            gameOverOverlay.classList.add('visible');
-            removeEventListeners();
+            Runner.stop(runner); // Stop the Matter.js runner
+            gameOverOverlay.classList.add('visible'); // Show game over screen
+            removeEventListeners(); // Remove game interaction listeners
             if (gameOverSynth) {
-                gameOverSynth.triggerAttackRelease("C3", "1s");
+                gameOverSynth.triggerAttackRelease("C3", "1s"); // Play game over sound
             }
         }
 
+        /**
+         * Restarts the game by calling initGame().
+         */
         function restartGame() {
             initGame();
         }
 
+        /**
+         * Activates a power-up if the player has enough gold.
+         * Deducts gold and updates active power-up state.
+         * @param {string} type - The type of power-up to activate ('makeBomb', 'pickNext', 'popItems').
+         */
         function activatePowerUp(type) {
             if (isGameOver) return;
 
             const cost = POWER_UP_COSTS[type];
             if (gold < cost) {
-                if (errorSynth) errorSynth.triggerAttackRelease("C2", "0.2s");
+                if (errorSynth) errorSynth.triggerAttackRelease("C2", "0.2s"); // Play error sound
                 return;
             }
 
-            gold -= cost;
+            gold -= cost; // Deduct gold
             goldElement.textContent = gold;
-            updatePowerUpButtons();
+            updatePowerUpButtons(); // Update button states
 
-            if (powerUpActivateSynth) powerUpActivateSynth.triggerAttackRelease("G4", "8n");
+            if (powerUpActivateSynth) powerUpActivateSynth.triggerAttackRelease("G4", "8n"); // Play activation sound
 
-            activePowerUp = type;
+            activePowerUp = type; // Set the active power-up
 
+            // Special handling for 'pickNext' power-up (instant effect)
             if (type === 'pickNext') {
-                nextFruitTypeIndex = (nextFruitTypeIndex + 1) % FRUIT_TYPES.length;
-                generateNextFruit();
-                activePowerUp = null;
-                if (powerUpUseSynth) powerUpUseSynth.triggerAttackRelease("G5", "8n");
+                nextFruitTypeIndex = (nextFruitTypeIndex + 1) % FRUIT_TYPES.length; // Cycle to next fruit type
+                generateNextFruit(); // Update indicator
+                activePowerUp = null; // Deactivate immediately
+                if (powerUpUseSynth) powerUpUseSynth.triggerAttackRelease("G5", "8n"); // Play use sound
             }
         }
 
+        /**
+         * Handles click/touch events when 'popItems' power-up is active.
+         * Pops (removes) fruits around the clicked/touched point.
+         * @param {Event} e - The mouse or touch event.
+         */
         function handlePopItemsClick(e) {
-            if (isGameOver || activePowerUp !== 'popItems') return;
+            if (isGameOver || activePowerUp !== 'popItems') return; // Only active if game is running and power-up is selected
 
-            e.preventDefault();
+            e.preventDefault(); // Prevent default browser behavior (e.g., scrolling)
 
             const rect = gameCanvas.getBoundingClientRect();
+            // Get click/touch coordinates relative to the canvas
             const clickX = e.touches ? e.touches[0].clientX - rect.left : e.clientX - rect.left;
             const clickY = e.touches ? e.touches[0].clientY - rect.top : e.clientY - rect.top;
 
+            // Find Matter.js bodies at the clicked point
             const clickedBodies = Matter.Query.point(Composite.allBodies(engine.world), { x: clickX, y: clickY });
 
             if (clickedBodies.length > 0) {
-                const targetBody = clickedBodies[0];
-                const popRadius = targetBody.circleRadius * 2.5;
+                const targetBody = clickedBodies[0]; // Target the first body found
+                const popRadius = targetBody.circleRadius * 2.5; // Define pop radius based on target fruit size
 
+                // Filter bodies within the pop radius
                 const bodiesToRemove = Composite.allBodies(engine.world).filter(body =>
-                    (body.label === 'fruit' || body.label === 'bomb') &&
+                    (body.label === 'fruit' || body.label === 'bomb') && // Only remove fruits or bombs
                     Matter.Vector.magnitude(Matter.Vector.sub(targetBody.position, body.position)) < popRadius
                 );
 
-                bodiesToRemove.forEach(body => body.isRemoving = true);
-                Composite.remove(engine.world, bodiesToRemove);
+                bodiesToRemove.forEach(body => body.isRemoving = true); // Mark for removal
+                Composite.remove(engine.world, bodiesToRemove); // Remove bodies from world
 
-                activePowerUp = null;
-                updatePowerUpButtons();
-                if (powerUpUseSynth) powerUpUseSynth.triggerAttackRelease("G5", "8n");
+                activePowerUp = null; // Deactivate power-up
+                updatePowerUpButtons(); // Update button states
+                if (powerUpUseSynth) powerUpUseSynth.triggerAttackRelease("G5", "8n"); // Play use sound
             }
         }
 
+        /**
+         * Updates the disabled state and active class of power-up buttons
+         * based on current gold and active power-up.
+         */
         function updatePowerUpButtons() {
+            // Disable buttons if not enough gold
             makeBombButton.disabled = gold < POWER_UP_COSTS.makeBomb;
             pickNextButton.disabled = gold < POWER_UP_COSTS.pickNext;
             popItemsButton.disabled = gold < POWER_UP_COSTS.popItems;
 
+            // Toggle 'disabled' class for styling
             makeBombButton.classList.toggle('disabled', makeBombButton.disabled);
             pickNextButton.classList.toggle('disabled', pickNextButton.disabled);
             popItemsButton.classList.toggle('disabled', popItemsButton.disabled);
 
+            // Remove active class from all power-up buttons
             makeBombButton.classList.remove('active-power-up');
             popItemsButton.classList.remove('active-power-up');
             pickNextButton.classList.remove('active-power-up');
 
+            // Add active class to the currently selected power-up
             if (activePowerUp === 'makeBomb') {
                 makeBombButton.classList.add('active-power-up');
             } else if (activePowerUp === 'popItems') {
@@ -1009,51 +1197,81 @@
             }
         }
 
+        /**
+         * Updates the position of the drop line and drop indicator fruit
+         * based on the pointer's X-coordinate.
+         * @param {number} clientX - The clientX coordinate of the pointer.
+         */
         const updateDropPosition = (clientX) => {
             const rect = gameCanvas.getBoundingClientRect();
-            let x = clientX - rect.left;
+            let x = clientX - rect.left; // Get X relative to canvas
 
             const scaledRadius = getScaledFruitRadius(nextFruitTypeIndex);
+            // Clamp X position to prevent indicator from going out of bounds
             x = Math.max(scaledRadius, Math.min(currentCanvasWidth - scaledRadius, x));
 
+            // Position drop line and indicator using percentage for responsiveness
             dropLine.style.left = `${(x / currentCanvasWidth) * 100}%`;
             dropIndicatorFruit.style.left = `${(x / currentCanvasWidth) * 100}%`;
         };
 
+        /**
+         * Event handler for mouse/touch move on the canvas.
+         * Updates the drop indicator position.
+         * @param {Event} e - The mouse or touch event.
+         */
         const handlePointerMove = (e) => {
             if (isGameOver) return;
-            e.preventDefault();
+            e.preventDefault(); // Prevent default browser scroll/zoom
             const clientX = e.touches ? e.touches[0].clientX : e.clientX;
             updateDropPosition(clientX);
         };
 
+        /**
+         * Event handler for mouse/touch down on the canvas.
+         * Starts audio context if needed, then either drops a fruit or uses 'popItems' power-up.
+         * @param {Event} e - The mouse or touch event.
+         */
         const handlePointerDown = (e) => {
             if (isGameOver) return;
             e.preventDefault();
 
+            // Start Tone.js audio context on first user interaction (required by browsers)
             if (Tone.context.state !== 'running') {
-                Tone.start();
+                Tone.start().then(() => {
+                    console.log("Tone.js audio context started.");
+                }).catch(err => {
+                    console.error("Failed to start Tone.js audio context:", err);
+                });
             }
 
             if (activePowerUp === 'popItems') {
-                handlePopItemsClick(e);
+                handlePopItemsClick(e); // Use pop items power-up
             } else {
                 const clientX = e.touches ? e.touches[0].clientX : e.clientX;
                 const rect = gameCanvas.getBoundingClientRect();
                 const dropX = clientX - rect.left;
-                dropFruit(dropX);
+                dropFruit(dropX); // Drop a fruit
             }
         };
 
+        // Event handler wrappers for buttons
         const handleRestartClick = () => restartGame();
         const handleMakeBombClick = () => activatePowerUp('makeBomb');
         const handlePickNextClick = () => activatePowerUp('pickNext');
         const handlePopItemsButtonClick = () => activatePowerUp('popItems');
 
+        /**
+         * Opens a new tab to buy gold.
+         */
         function handleBuyGoldClick() {
             window.open('https://tally.so/r/3x7Bl5', '_blank');
         }
 
+        /**
+         * Handles redemption of gold codes.
+         * Updates gold amount and displays a message.
+         */
         function handleRedeemCode() {
             const code = redeemCodeInput.value.trim().toUpperCase();
             let message = '';
@@ -1062,27 +1280,31 @@
             if (code === 'RAAJ') {
                 amount = 500;
                 message = `Code redeemed! You received ${amount} gold.`;
-                redeemMessage.style.color = '#48bb78';
+                redeemMessage.style.color = '#48bb78'; // Green for success
             } else if (code === 'TONY') {
                 amount = 5000;
                 message = `Super code redeemed! You received ${amount} gold!`;
                 redeemMessage.style.color = '#48bb78';
             } else {
                 message = 'Invalid code.';
-                redeemMessage.style.color = '#ef4444';
+                redeemMessage.style.color = '#ef4444'; // Red for error
             }
 
             gold += amount;
             goldElement.textContent = gold;
             updatePowerUpButtons();
             redeemMessage.textContent = message;
-            redeemCodeInput.value = '';
+            redeemCodeInput.value = ''; // Clear input field
 
+            // Clear message after 3 seconds
             setTimeout(() => {
-                redeeemMessage.textContent = '';
+                redeemMessage.textContent = ''; // Fixed typo: redeeemMessage -> redeemMessage
             }, 3000);
         }
 
+        /**
+         * Toggles background music playback (mute/unmute).
+         */
         function toggleMusic() {
             if (backgroundMusic.mute) {
                 backgroundMusic.mute = false;
@@ -1093,24 +1315,42 @@
             }
         }
 
+        /**
+         * Renders the list of fruits in the left sidebar.
+         * Displays discovered fruits with emoji/name and undiscovered fruits as placeholders.
+         */
         function renderFruitList() {
-            fruitListContainer.innerHTML = '';
+            fruitListContainer.innerHTML = ''; // Clear existing list
             FRUIT_TYPES.forEach(fruit => {
                 const fruitDiv = document.createElement('div');
                 fruitDiv.classList.add('fruit-list-item');
-                fruitDiv.innerHTML = `<span>${fruit.emoji}</span> ${fruit.name}`;
+                if (discoveredFruits.has(fruit.name)) {
+                    // Display discovered fruit
+                    fruitDiv.innerHTML = `<span>${fruit.emoji}</span> ${fruit.name}`;
+                    fruitDiv.style.opacity = 1;
+                } else {
+                    // Display undiscovered fruit as placeholder
+                    fruitDiv.innerHTML = `<span>❓</span> ???`;
+                    fruitDiv.style.opacity = 0.5; // Dim undiscovered fruits
+                }
                 fruitListContainer.appendChild(fruitDiv);
             });
         }
 
+        /**
+         * Adds all necessary event listeners for game interaction.
+         * Removes existing ones first to prevent duplicates.
+         */
         function addEventListeners() {
-            removeEventListeners();
+            removeEventListeners(); // Ensure no duplicate listeners
 
+            // Canvas interaction for dropping fruits and power-ups
             gameCanvas.addEventListener('mousemove', handlePointerMove);
             gameCanvas.addEventListener('touchmove', handlePointerMove);
             gameCanvas.addEventListener('mousedown', handlePointerDown);
             gameCanvas.addEventListener('touchstart', handlePointerDown);
 
+            // Button click listeners
             restartButton.addEventListener('click', handleRestartClick);
             makeBombButton.addEventListener('click', handleMakeBombClick);
             pickNextButton.addEventListener('click', handlePickNextClick);
@@ -1120,6 +1360,9 @@
             toggleMusicButton.addEventListener('click', toggleMusic);
         }
 
+        /**
+         * Removes all event listeners. Called on game over or before re-adding.
+         */
         function removeEventListeners() {
             gameCanvas.removeEventListener('mousemove', handlePointerMove);
             gameCanvas.removeEventListener('touchmove', handlePointerMove);
@@ -1135,14 +1378,16 @@
             toggleMusicButton.removeEventListener('click', toggleMusic);
         }
 
+        // Initialize the game when the window has fully loaded
         window.onload = function() {
-            initAudio();
-            adjustCanvasSize();
-            initGame();
-            renderFruitList();
+            initAudio(); // Initialize audio system
+            adjustCanvasSize(); // Set initial canvas size
+            initGame(); // Start the game
+            renderFruitList(); // Initial render of the fruit list
+            // Add resize listener to adjust game elements when window size changes
             window.addEventListener('resize', () => {
                 adjustCanvasSize();
-                updateWalls();
+                updateWalls(); // Recreate walls on resize
             });
         };
     </script>
