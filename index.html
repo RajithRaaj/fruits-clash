@@ -55,7 +55,7 @@
             flex-direction: column;
             align-items: center;
             justify-content: flex-end;
-            padding: 10px; /* Reduced padding to maximize canvas space */
+            /* Removed padding here to simplify canvas sizing relative to game-area */
             /* More engaging background pattern */
             background-image: url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%239BA4B5' fill-opacity='0.1' fill-rule='evenodd'%3E%3Ccircle cx='3' cy='3' r='3'/%3E%3Ccircle cx='13' cy='13' r='3'/%3E%3C/g%3E%3C/svg%3E");
         }
@@ -273,7 +273,7 @@
             <div class="top-bar-item hold-button">Hold</div>
         </div>
 
-        <div class="game-area">
+        <div class="game-area" id="gameArea"> <!-- Added ID for easier reference in JS -->
             <canvas id="gameCanvas"></canvas>
             <div class="drop-line" id="dropLine"></div>
             <div class="drop-indicator-fruit" id="dropIndicatorFruit"></div>
@@ -299,21 +299,23 @@
               Bodies = Matter.Bodies,
               Composite = Matter.Composite,
               Events = Matter.Events,
-              Query = Matter.Query; // Added for popItems power-up
+              Query = Matter.Query;
 
         // Game configuration
         const BASE_CANVAS_WIDTH = 360; // Reference width for fruit scaling
         const BASE_CANVAS_HEIGHT = 600; // Reference height for fruit scaling
         const WALL_THICKNESS = 20;
-        const FRUIT_DROP_Y_RATIO = 0.2; // Y-coordinate where fruits are dropped from (relative to canvas height) - Made lower for difficulty
-        const GAME_OVER_Y_RATIO = 0.08; // If fruit center goes above this line (relative to canvas height), game over - Made higher for difficulty
+        // Adjusted: Fruits drop from a reasonable height, and game over line is near the top
+        const FRUIT_DROP_Y_RATIO = 0.15; // Y-coordinate where fruits are dropped from (relative to canvas height)
+        const GAME_OVER_Y_RATIO = 0.05; // If fruit center goes above this line (relative to canvas height), game over
+        const GAME_OVER_DELAY = 2000; // 2 seconds delay before game over if fruit is above the line
 
         const FRUIT_TYPES = [
             { name: "Cherry", radius: 15, color: "#ef4444", value: 10, emoji: "🍒" },
-            { name: "Strawberry", radius: 20, color: "#FF6347", value: 20, emoji: "🍓" }, // Refined color
+            { name: "Strawberry", radius: 20, color: "#FF6347", value: 20, emoji: "🍓" },
             { name: "Grape", radius: 25, color: "#8b5cf6", value: 30, emoji: "🍇" },
             { name: "Dekopon", radius: 30, color: "#fb923c", value: 40, emoji: "🍊" },
-            { name: "Orange", radius: 35, color: "#FFA500", value: 50, emoji: "🥭" }, // Refined color
+            { name: "Orange", radius: 35, color: "#FFA500", value: 50, emoji: "🥭" },
             { name: "Apple", radius: 40, color: "#dc2626", value: 60, emoji: "🍎" },
             { name: "Pear", radius: 45, color: "#a3e635", value: 70, emoji: "🍐" },
             { name: "Peach", radius: 50, color: "#fca5a5", value: 80, emoji: "🍑" },
@@ -337,7 +339,8 @@
         let isDropping = false;
         let currentCanvasWidth;
         let currentCanvasHeight;
-        let activePowerUp = null; // Stores the currently active power-up ('makeBomb', 'popItems', or null)
+        let activePowerUp = null;
+        let gameOverTimer = null; // Timer for delayed game over
 
         // Tone.js Synths for sound effects
         let dropSynth;
@@ -354,7 +357,7 @@
         const restartButton = document.getElementById('restartButton');
         const dropLine = document.getElementById('dropLine');
         const dropIndicatorFruit = document.getElementById('dropIndicatorFruit');
-        const gameContainer = document.querySelector('.game-container');
+        const gameAreaElement = document.getElementById('gameArea'); // Get gameArea by ID
         const gameOverLine = document.getElementById('gameOverLine');
 
         // Power-up buttons
@@ -379,10 +382,9 @@
          * for mobile compatibility.
          */
         function adjustCanvasSize() {
-            // Get the actual computed size of the game-area, not just the canvas element's attributes
-            const gameArea = gameCanvas.parentElement;
-            currentCanvasWidth = gameArea.clientWidth;
-            currentCanvasHeight = gameArea.clientHeight;
+            // Get the actual computed size of the game-area, which the canvas fills
+            currentCanvasWidth = gameAreaElement.clientWidth; // Use gameAreaElement
+            currentCanvasHeight = gameAreaElement.clientHeight; // Use gameAreaElement
 
             gameCanvas.width = currentCanvasWidth;
             gameCanvas.height = currentCanvasHeight;
@@ -500,10 +502,12 @@
                 Composite.clear(engine.world); // Clear all bodies from the world
             }
             if (render) {
+                // Instead of removing canvas, just stop rendering and clear context
                 Events.off(render, 'afterRender', drawEmojis);
-                Render.stop(render); // Stop the old render instance
-                render.canvas.remove(); // Remove old canvas element to prevent issues
-                render = null; // Clear render instance
+                Render.stop(render);
+                render.context.clearRect(0, 0, render.canvas.width, render.canvas.height); // Clear visual
+                // Do NOT set render = null here if we are reusing the canvas element
+                // The render instance will be re-created below, ensuring a fresh renderer for the existing canvas
             }
 
             // Reset game state variables
@@ -514,27 +518,35 @@
             goldElement.textContent = gold;
             gameOverOverlay.classList.remove('visible');
             updatePowerUpButtons();
+            
+            // Reset game over timer
+            if (gameOverTimer) {
+                clearTimeout(gameOverTimer);
+                gameOverTimer = null;
+            }
 
-            // Create new Matter.js engine, renderer, and runner
+            // Create new Matter.js engine
             engine = Engine.create();
-            engine.gravity.y = 1.2; // Increased gravity for more difficulty
+            engine.gravity.y = 1.8; // Increased gravity further for more difficulty
 
+            // Create new Matter.js renderer, using the *existing* gameCanvas element
+            // This ensures the canvas element itself is not removed from the DOM
             render = Render.create({
-                canvas: gameCanvas,
+                canvas: gameCanvas, // Use the existing canvas element
                 engine: engine,
                 options: {
-                    width: gameCanvas.width,
-                    height: gameCanvas.height,
-                    wireframes: false, // Render solid shapes, not just outlines
-                    background: 'transparent', // Let CSS handle the background
-                    pixelRatio: window.devicePixelRatio || 1 // For sharp rendering
+                    width: gameCanvas.width, // These will be updated by adjustCanvasSize
+                    height: gameCanvas.height, // These will be updated by adjustCanvasSize
+                    wireframes: false,
+                    background: 'transparent',
+                    pixelRatio: window.devicePixelRatio || 1
                 }
             });
 
             runner = Runner.create();
 
-            // Add walls and floor to the new engine's world
-            createWalls();
+            // Adjust canvas size and create walls (this also calls createWalls())
+            adjustCanvasSize();
 
             // Run the renderer and engine
             Render.run(render);
@@ -547,12 +559,12 @@
             generateNextFruit();
             updateDropIndicator();
 
-            // Add DOM event listeners (ensure they are only added once or properly removed/re-added)
+            // Add DOM event listeners
             addEventListeners();
 
             // Add Matter.js engine event listeners to the NEW engine instance
             Events.on(engine, 'collisionStart', handleCollision);
-            Events.on(engine, 'afterUpdate', checkGameOver);
+            Events.on(engine, 'afterUpdate', checkGameOver); // Check game over every frame
         }
 
         /**
@@ -566,15 +578,15 @@
             const canvasWidth = gameCanvas.width;
             const canvasHeight = gameCanvas.height;
 
-            // Floor
+            // Floor: Positioned at the bottom edge of the canvas
             Composite.add(engine.world, [
-                Bodies.rectangle(canvasWidth / 2, canvasHeight + WALL_THICKNESS / 2, canvasWidth, WALL_THICKNESS, { isStatic: true, label: 'wall', render: { fillStyle: '#94a3b8' } })
+                Bodies.rectangle(canvasWidth / 2, canvasHeight - (WALL_THICKNESS / 2), canvasWidth, WALL_THICKNESS, { isStatic: true, label: 'wall', render: { fillStyle: '#94a3b8' } })
             ]);
 
-            // Walls
+            // Walls: Positioned at the left and right edges of the canvas
             Composite.add(engine.world, [
-                Bodies.rectangle(-WALL_THICKNESS / 2, canvasHeight / 2, WALL_THICKNESS, canvasHeight, { isStatic: true, label: 'wall', render: { fillStyle: '#94a3b8' } }), // Left wall
-                Bodies.rectangle(canvasWidth + WALL_THICKNESS / 2, canvasHeight / 2, WALL_THICKNESS, canvasHeight, { isStatic: true, label: 'wall', render: { fillStyle: '#94a3b8' } })  // Right wall
+                Bodies.rectangle(-(WALL_THICKNESS / 2), canvasHeight / 2, WALL_THICKNESS, canvasHeight, { isStatic: true, label: 'wall', render: { fillStyle: '#94a3b8' } }), // Left wall
+                Bodies.rectangle(canvasWidth + (WALL_THICKNESS / 2), canvasHeight / 2, WALL_THICKNESS, canvasHeight, { isStatic: true, label: 'wall', render: { fillStyle: '#94a3b8' } })  // Right wall
             ]);
         }
 
@@ -594,13 +606,14 @@
             const currentFruitCount = Composite.allBodies(engine.world).filter(b => b.label === 'fruit').length;
             let maxFruitIndex = 2; // Start with Cherry, Strawberry, Grape
 
-            if (currentFruitCount > 3) { // Introduce larger fruits earlier for difficulty
-                maxFruitIndex = Math.min(FRUIT_TYPES.length - 1, 4); // Up to Orange/Mango
+            // Difficulty adjustment: introduce larger fruits earlier
+            if (currentFruitCount > 3) {
+                maxFruitIndex = Math.min(FRUIT_TYPES.length - 1, 4); // Up to Dekopon/Orange
             }
-            if (currentFruitCount > 7) { // Introduce even larger fruits earlier
-                maxFruitIndex = Math.min(FRUIT_TYPES.length - 1, 6); // Up to Pear
+            if (currentFruitCount > 7) {
+                maxFruitIndex = Math.min(FRUIT_TYPES.length - 1, 6); // Up to Apple/Pear
             }
-            // You can add more conditions to introduce larger fruits as the game progresses
+            // Further conditions can be added for even larger fruits
 
             nextFruitTypeIndex = Math.floor(Math.random() * (maxFruitIndex + 1));
             updateDropIndicator();
@@ -642,21 +655,21 @@
             const dropY = currentCanvasHeight * FRUIT_DROP_Y_RATIO;
 
             const fruit = Bodies.circle(dropX, dropY, scaledRadius, {
-                restitution: 0.3, // Bounciness
-                friction: 0.5,    // Friction with other bodies
-                density: 0.001,   // Mass relative to volume
-                label: isBomb ? 'bomb' : 'fruit', // Label for collision detection
-                collisionFilter: { group: 0 }, // Allow all fruits to collide with each other
-                render: { fillStyle: isBomb ? '#ff0000' : fruitColor }, // Red for bomb, fruit color otherwise
-                fruitTypeIndex: nextFruitTypeIndex, // Custom property to store fruit type
-                value: fruitValue, // Custom property for score
-                merged: false // Flag to prevent double merging
+                restitution: 0.1, // Further reduced bounciness for difficulty
+                friction: 0.8,    // Further increased friction for difficulty
+                density: 0.001,
+                label: isBomb ? 'bomb' : 'fruit',
+                collisionFilter: { group: 0 },
+                render: { fillStyle: isBomb ? '#ff0000' : fruitColor },
+                fruitTypeIndex: nextFruitTypeIndex,
+                value: fruitValue,
+                merged: false
             });
 
             Composite.add(engine.world, fruit);
 
             if (dropSynth) {
-                dropSynth.triggerAttackRelease("C4", "8n"); // Play drop sound
+                dropSynth.triggerAttackRelease("C4", "8n");
             }
 
             // If a bomb was dropped, deactivate the power-up
@@ -669,7 +682,7 @@
             // Short delay before allowing next drop to prevent rapid-fire drops
             setTimeout(() => {
                 isDropping = false;
-                generateNextFruit(); // Prepare the next fruit
+                generateNextFruit();
             }, 500);
         }
 
@@ -697,7 +710,7 @@
                 // Handle fruit merging: if two identical fruits collide
                 if (bodyA.label === 'fruit' && bodyB.label === 'fruit' &&
                     bodyA.fruitTypeIndex === bodyB.fruitTypeIndex &&
-                    bodyA.fruitTypeIndex < FRUIT_TYPES.length - 1) { // Ensure it's not the largest fruit
+                    bodyA.fruitTypeIndex < FRUIT_TYPES.length - 1) {
 
                     // Prevent multiple merges from the same collision event
                     if (bodyA.merged || bodyB.merged) {
@@ -722,8 +735,8 @@
                     const newY = (bodyA.position.y + bodyB.position.y) / 2;
 
                     const newFruit = Bodies.circle(newX, newY, newScaledRadius, {
-                        restitution: 0.3,
-                        friction: 0.5,
+                        restitution: 0.1, // Further reduced bounciness for difficulty
+                        friction: 0.8,    // Further increased friction for difficulty
                         density: 0.001,
                         label: 'fruit',
                         render: { fillStyle: newFruitColor },
@@ -735,7 +748,7 @@
                     Composite.add(engine.world, newFruit);
 
                     if (mergeSynth) {
-                        mergeSynth.triggerAttackRelease("E5", "4n"); // Play merge sound
+                        mergeSynth.triggerAttackRelease("E5", "4n");
                     }
 
                     // Update score and power-up button states
@@ -751,21 +764,21 @@
          * @param {object} bombBody - The Matter.js body of the bomb.
          */
         function explodeBomb(bombBody) {
-            if (bombBody.exploded) return; // Prevent multiple explosions from one bomb
+            if (bombBody.exploded) return;
 
             bombBody.exploded = true;
-            Composite.remove(engine.world, bombBody); // Remove the bomb itself
+            Composite.remove(engine.world, bombBody);
 
-            const explosionRadius = bombBody.circleRadius * 3; // Define explosion radius
+            const explosionRadius = bombBody.circleRadius * 3;
             const affectedBodies = Composite.allBodies(engine.world).filter(body =>
-                (body.label === 'fruit' || (body.label === 'bomb' && body !== bombBody)) && // Affect fruits and other bombs (but not self)
+                (body.label === 'fruit' || (body.label === 'bomb' && body !== bombBody)) &&
                 Matter.Vector.magnitude(Matter.Vector.sub(bombBody.position, body.position)) < explosionRadius
             );
 
             // Remove all affected bodies
             Composite.remove(engine.world, affectedBodies);
 
-            if (powerUpUseSynth) powerUpUseSynth.triggerAttackRelease("C5", "0.5s"); // Play explosion sound
+            if (powerUpUseSynth) powerUpUseSynth.triggerAttackRelease("C5", "0.5s");
         }
 
         /**
@@ -784,9 +797,9 @@
 
             if (poppedFruits.length > 0) {
                 Composite.remove(engine.world, poppedFruits);
-                if (powerUpUseSynth) powerUpUseSynth.triggerAttackRelease("D5", "0.3s"); // Play pop sound
+                if (powerUpUseSynth) powerUpUseSynth.triggerAttackRelease("D5", "0.3s");
             } else {
-                if (errorSynth) errorSynth.triggerAttackRelease("C2", "0.2s"); // Play error sound if no fruits to pop
+                if (errorSynth) errorSynth.triggerAttackRelease("C2", "0.2s");
             }
 
             activePowerUp = null; // Deactivate power-up after use
@@ -802,12 +815,28 @@
 
             const fruits = Composite.allBodies(engine.world).filter(body => body.label === 'fruit' || body.label === 'bomb');
             const gameOverLineY = currentCanvasHeight * GAME_OVER_Y_RATIO;
+            let fruitAboveLine = false;
 
             for (const fruit of fruits) {
-                // Check if the top of the fruit (position.y - radius) is above the game over line
-                if (fruit.position.y - fruit.circleRadius < gameOverLineY) {
-                    endGame();
+                // Check if the top of the fruit (bounds.min.y) is above the game over line
+                if (fruit.bounds.min.y < gameOverLineY) {
+                    fruitAboveLine = true;
                     break;
+                }
+            }
+
+            if (fruitAboveLine) {
+                if (!gameOverTimer) {
+                    // Start the timer if a fruit is above the line and timer is not running
+                    gameOverTimer = setTimeout(() => {
+                        endGame();
+                    }, GAME_OVER_DELAY);
+                }
+            } else {
+                // If no fruit is above the line, clear the timer
+                if (gameOverTimer) {
+                    clearTimeout(gameOverTimer);
+                    gameOverTimer = null;
                 }
             }
         }
@@ -817,11 +846,11 @@
          */
         function endGame() {
             isGameOver = true;
-            Runner.stop(runner); // Stop the physics simulation
-            gameOverOverlay.classList.add('visible'); // Show game over screen
-            removeEventListeners(); // Remove DOM event listeners to prevent further interaction
+            Runner.stop(runner);
+            gameOverOverlay.classList.add('visible');
+            removeEventListeners();
             if (gameOverSynth) {
-                gameOverSynth.triggerAttackRelease("C3", "1s"); // Play game over sound
+                gameOverSynth.triggerAttackRelease("C3", "1s");
             }
         }
 
@@ -829,7 +858,7 @@
          * Restarts the game by re-initializing all game components.
          */
         function restartGame() {
-            initGame(); // Re-initialize the entire game
+            initGame();
         }
 
         /**
@@ -842,29 +871,29 @@
 
             const cost = POWER_UP_COSTS[type];
             if (gold < cost) {
-                if (errorSynth) errorSynth.triggerAttackRelease("C2", "0.2s"); // Not enough gold sound
+                if (errorSynth) errorSynth.triggerAttackRelease("C2", "0.2s");
                 return;
             }
 
             // If a power-up is already active, deactivate it first (e.g., if user clicks 'bomb' then 'pop')
             if (activePowerUp === type) {
                 activePowerUp = null; // Toggle off if already active
-                if (powerUpActivateSynth) powerUpActivateSynth.triggerAttackRelease("C4", "8n"); // Deactivation sound
+                if (powerUpActivateSynth) powerUpActivateSynth.triggerAttackRelease("C4", "8n");
             } else {
                 activePowerUp = type; // Activate the new power-up
                 gold -= cost; // Deduct cost only on activation
                 goldElement.textContent = gold;
-                if (powerUpActivateSynth) powerUpActivateSynth.triggerAttackRelease("G4", "8n"); // Activation sound
+                if (powerUpActivateSynth) powerUpActivateSynth.triggerAttackRelease("G4", "8n");
             }
             
-            updatePowerUpButtons(); // Update button appearance
+            updatePowerUpButtons();
 
             // 'Pick Next' is an immediate effect, not a persistent active state
-            if (type === 'pickNext' && activePowerUp !== 'pickNext') { // Ensure it's not toggling off
-                nextFruitTypeIndex = (nextFruitTypeIndex + 1) % FRUIT_TYPES.length; // Cycle to next fruit
-                generateNextFruit(); // Update indicator
-                activePowerUp = null; // Immediately deactivate
-                if (powerUpUseSynth) powerUpUseSynth.triggerAttackRelease("G5", "8n"); // Use sound
+            if (type === 'pickNext' && activePowerUp !== 'pickNext') {
+                nextFruitTypeIndex = (nextFruitTypeIndex + 1) % FRUIT_TYPES.length;
+                generateNextFruit();
+                activePowerUp = null;
+                if (powerUpUseSynth) powerUpUseSynth.triggerAttackRelease("G5", "8n");
             }
         }
 
@@ -893,13 +922,13 @@
          */
         const updateDropPosition = (clientX) => {
             const rect = gameCanvas.getBoundingClientRect();
-            let x = clientX - rect.left; // X coordinate relative to canvas
+            let x = clientX - rect.left;
 
             const scaledRadius = getScaledFruitRadius(nextFruitTypeIndex);
             // Clamp x to prevent indicator from going outside canvas walls
             x = Math.max(scaledRadius, Math.min(currentCanvasWidth - scaledRadius, x));
 
-            dropLine.style.left = `${x}px`; // Use pixels for precise positioning
+            dropLine.style.left = `${x}px`;
             dropIndicatorFruit.style.left = `${x}px`;
         };
 
@@ -909,7 +938,7 @@
          */
         const handlePointerMove = (e) => {
             if (isGameOver) return;
-            e.preventDefault(); // Prevent scrolling/zooming on touch devices
+            e.preventDefault();
             const clientX = e.touches ? e.touches[0].clientX : e.clientX;
             updateDropPosition(clientX);
         };
@@ -922,16 +951,13 @@
             if (isGameOver) return;
             e.preventDefault();
 
-            // Resume audio context on first user interaction (browser policy)
             if (Tone.context.state !== 'running') {
                 Tone.start();
             }
 
-            // If 'Pop Items' power-up is active, call its specific handler
             if (activePowerUp === 'popItems') {
                 handlePopItemsClick(e);
             } else {
-                // Otherwise, drop a fruit (or bomb if 'makeBomb' is active)
                 const clientX = e.touches ? e.touches[0].clientX : e.clientX;
                 const rect = gameCanvas.getBoundingClientRect();
                 const dropX = clientX - rect.left;
@@ -950,18 +976,15 @@
          * Ensures listeners are not duplicated by calling remove first.
          */
         function addEventListeners() {
-            removeEventListeners(); // Call remove first to be safe and prevent duplicates
+            removeEventListeners();
 
-            // Event listeners for dropping fruits/bombs and moving indicator
             gameCanvas.addEventListener('mousemove', handlePointerMove);
-            gameCanvas.addEventListener('touchmove', handlePointerMove, { passive: false }); // passive: false to allow preventDefault
+            gameCanvas.addEventListener('touchmove', handlePointerMove, { passive: false });
             gameCanvas.addEventListener('mousedown', handlePointerDown);
-            gameCanvas.addEventListener('touchstart', handlePointerDown, { passive: false }); // passive: false to allow preventDefault
+            gameCanvas.addEventListener('touchstart', handlePointerDown, { passive: false });
 
-            // Restart button listener
             restartButton.addEventListener('click', handleRestartClick);
 
-            // Power-up button listeners
             makeBombButton.addEventListener('click', handleMakeBombClick);
             pickNextButton.addEventListener('click', handlePickNextClick);
             popItemsButton.addEventListener('click', handlePopItemsButtonClick);
@@ -985,13 +1008,12 @@
 
         // Initial setup on window load
         window.onload = function() {
-            initAudio(); // Initialize sound synthesizers
-            adjustCanvasSize(); // Set initial canvas size based on container
-            initGame(); // Start the game
+            initAudio();
+            adjustCanvasSize();
+            initGame();
 
-            // Add a resize listener to make the game responsive
             window.addEventListener('resize', () => {
-                adjustCanvasSize(); // Re-adjust canvas and walls on window resize
+                adjustCanvasSize();
             });
         };
     </script>
