@@ -6,226 +6,421 @@
     <title>Merge Fruits</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script> <!-- Tone.js for sound effects -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        /* Base styles for full mobile screen and centering */
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f0f4f8; /* Light blue-gray background */
+            background: radial-gradient(circle at top left, #a7f3d0, #6ee7b7, #10b981);
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
             margin: 0;
-            overflow: hidden; /* Prevent body scroll */
-            -webkit-user-select: none; /* Disable text selection on iOS */
-            -moz-user-select: none; /* Disable text selection on Firefox */
-            -ms-user-select: none; /* Disable text selection on IE/Edge */
-            user-select: none; /* Standard disable text selection */
-            touch-action: none; /* Disable all default touch actions on body */
+            overflow: hidden;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            touch-action: none;
         }
 
-        /* Game container to mimic the reference game's layout */
         .game-container {
             position: relative;
             background-color: #ffffff;
-            border-radius: 16px; /* Rounded corners for the container */
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            border-radius: 20px;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
             display: flex;
-            flex-direction: row; /* Arrange main game area and sidebar side-by-side */
-            width: 100%;
-            height: 100vh; /* Full viewport height on mobile */
-            max-width: 450px; /* Max width for desktop to keep it mobile-like */
-            max-height: 800px; /* Max height for desktop */
+            flex-direction: row;
+            width: 95vw;
+            height: 95vh;
+            max-width: 450px;
+            max-height: 800px;
             box-sizing: border-box;
-            overflow: hidden; /* Ensure nothing spills out */
+            overflow: hidden;
         }
 
-        /* Main game area (canvas and its overlays) */
         .game-area {
             position: relative;
-            flex-grow: 1; /* Takes up available space */
-            background-color: #e2e8f0; /* Light gray for canvas background */
-            border-radius: 8px; /* Rounded corners for canvas */
-            overflow: hidden; /* Hide overflow from fruits */
+            flex-grow: 1;
+            background: linear-gradient(to bottom, #d1f7e0, #a7f3d0);
+            border-radius: 12px;
+            overflow: hidden;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: flex-end; /* Align canvas to bottom within game-area */
-            padding: 20px; /* Padding inside the game area */
-            background-image: repeating-linear-gradient(45deg, #f0f4f8 0px, #f0f4f8 10px, #e2e8f0 10px, #e2e8f0 20px); /* Striped background */
+            justify-content: flex-end;
+            padding: 20px;
+            box-sizing: border-box;
         }
 
         canvas {
             display: block;
-            touch-action: none; /* Prevent default touch actions like scrolling/zooming on canvas */
-            width: 100%; /* Canvas fills its parent's width */
-            height: 100%; /* Canvas fills its parent's height */
+            touch-action: none;
+            width: 100%;
+            height: calc(100% - 60px);
         }
 
-        /* Sidebar for controls and power-ups */
         .sidebar {
-            width: 100px; /* Fixed width for sidebar */
-            background-color: #f8fafc; /* Lighter background for sidebar */
+            width: 120px;
+            background-color: #f8fafc;
             padding: 10px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            border-left: 1px solid #cbd5e0; /* Separator line */
+            border-left: 1px solid #cbd5e0;
+            box-sizing: border-box;
+            overflow-y: auto;
+        }
+
+        .sidebar-section {
+            width: 100%;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e2e8f0;
+            text-align: center;
+        }
+
+        .sidebar-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .sidebar-title {
+            font-weight: bold;
+            font-size: 1rem;
+            color: #4a5568;
+            margin-bottom: 10px;
+        }
+
+        .fruit-list-item {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+            color: #2d3748;
+        }
+
+        .fruit-list-item span {
+            margin-right: 5px;
+            font-size: 1.2rem;
         }
 
         .sidebar-button {
-            background-color: #63b3ed; /* Blue button */
+            background-color: #63b3ed;
             color: #ffffff;
-            padding: 8px;
-            margin-bottom: 10px;
-            border-radius: 8px;
-            font-size: 0.8rem;
+            padding: 10px;
+            margin-bottom: 12px;
+            border-radius: 10px;
+            font-size: 0.9rem;
             font-weight: bold;
             text-align: center;
             cursor: pointer;
             border: none;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            transition: background-color 0.3s ease, transform 0.2s ease;
-            width: 100%; /* Full width of sidebar */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+            width: 100%;
+            position: relative;
+            overflow: hidden;
         }
 
         .sidebar-button:hover {
-            background-color: #4299e1; /* Darker blue on hover */
-            transform: translateY(-1px);
+            background-color: #4299e1;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
         }
 
         .sidebar-button:active {
             transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         .sidebar-button.disabled {
-            background-color: #a0aec0; /* Gray when disabled */
+            background-color: #a0aec0;
             cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+            opacity: 0.7;
         }
 
         .sidebar-button .cost {
-            font-size: 0.7rem;
-            opacity: 0.8;
+            font-size: 0.75rem;
+            opacity: 0.9;
+            display: block;
+            margin-top: 4px;
         }
 
-        /* Top bar for score and next fruit */
+        .sidebar-button.active-power-up {
+            background-color: #f6ad55 !important;
+            box-shadow: 0 0 0 3px #fbd38d, 0 4px 8px rgba(0, 0, 0, 0.15);
+            transform: scale(1.03);
+        }
+
         .top-bar {
             position: absolute;
             top: 0;
             left: 0;
             right: 0;
-            height: 60px; /* Height of the top bar */
-            background-color: #4a5568; /* Darker gray background */
+            height: 60px;
+            background-color: #4a5568;
             color: #ffffff;
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: 0 20px;
             z-index: 15;
-            border-top-left-radius: 16px;
-            border-top-right-radius: 16px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
         }
 
         .top-bar-item {
             font-weight: bold;
-            font-size: 1.1rem;
+            font-size: 1.2rem;
             display: flex;
             align-items: center;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
         }
 
         .top-bar-item span {
-            margin-left: 5px;
+            margin-left: 8px;
+            font-size: 1.3rem;
+            color: #fcd34d;
         }
 
-        /* Game Over Overlay */
         .game-over-overlay {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.7);
+            background-color: rgba(0, 0, 0, 0.8);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             color: #ffffff;
-            font-size: 2.5rem;
+            font-size: 2.8rem;
             font-weight: bold;
             text-align: center;
             z-index: 20;
-            border-radius: 16px;
+            border-radius: 20px;
             opacity: 0;
             visibility: hidden;
-            transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+            transition: opacity 0.4s ease-in-out, visibility 0.4s ease-in-out;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.4);
         }
         .game-over-overlay.visible {
             opacity: 1;
             visibility: visible;
         }
         .restart-button {
-            background-color: #48bb78; /* Green for restart button */
+            background-color: #48bb78;
             color: #ffffff;
-            padding: 12px 24px;
+            padding: 15px 30px;
             border-radius: 9999px;
-            font-size: 1.5rem;
+            font-size: 1.6rem;
             font-weight: bold;
             cursor: pointer;
             border: none;
-            margin-top: 20px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
-            transition: background-color 0.3s ease, transform 0.2s ease;
+            margin-top: 30px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2), 0 2px 6px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+            letter-spacing: 0.05em;
         }
         .restart-button:hover {
-            background-color: #38a169; /* Darker green on hover */
-            transform: translateY(-2px);
+            background-color: #38a169;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
         }
         .restart-button:active {
             transform: translateY(0);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
         }
 
-        /* Drop line and indicator for next fruit */
         .drop-line {
             position: absolute;
-            top: 0;
-            width: 2px;
-            height: 100%;
-            background-color: rgba(255, 255, 255, 0.5); /* White line */
+            top: 60px;
+            width: 3px;
+            height: calc(100% - 60px);
+            background-color: rgba(255, 255, 255, 0.6);
             z-index: 5;
-            pointer-events: none; /* Do not block mouse events */
+            pointer-events: none;
+            border-radius: 2px;
+            box-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
         }
         .drop-indicator-fruit {
             position: absolute;
-            top: 0; /* Will be set by JS */
+            top: 60px;
             transform: translateX(-50%);
             border-radius: 50%;
-            opacity: 0.7;
+            opacity: 0.8;
             pointer-events: none;
             z-index: 6;
-            transition: left 0.05s linear; /* Smooth transition for indicator */
+            transition: left 0.05s linear;
             display: flex;
             justify-content: center;
             align-items: center;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
         }
         .drop-indicator-fruit span {
             display: block;
             text-align: center;
-            line-height: 1; /* Adjust line-height to center emoji vertically */
+            line-height: 1;
         }
 
-        /* Game Over Visual Line */
         .game-over-line {
             position: absolute;
-            top: 0; /* Will be set by JS */
-            left: 0; /* Aligned with canvas */
-            width: 100%; /* Aligned with canvas */
-            height: 2px;
-            background-color: #ef4444; /* Red line */
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background-color: #ef4444;
             z-index: 7;
             pointer-events: none;
+            box-shadow: 0 0 15px #ef4444;
+            border-radius: 2px;
+        }
+
+        .redeem-input {
+            width: calc(100% - 20px);
+            padding: 8px;
+            margin-top: 10px;
+            border-radius: 8px;
+            border: 1px solid #cbd5e0;
+            font-size: 0.85rem;
+            box-sizing: border-box;
+        }
+
+        .redeem-message {
+            font-size: 0.8rem;
+            margin-top: 5px;
+            min-height: 1em;
+        }
+
+        .music-controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 10px;
+        }
+
+        .music-controls button {
+            background-color: #4299e1;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.8rem;
+            margin-bottom: 8px;
+            transition: background-color 0.2s ease;
+        }
+
+        .music-controls button:hover {
+            background-color: #3182ce;
+        }
+
+        .music-controls input[type="range"] {
+            width: 80%;
+            -webkit-appearance: none;
+            height: 4px;
+            background: #cbd5e0;
+            border-radius: 5px;
+            outline: none;
+            opacity: 0.7;
+            transition: opacity .2s;
+        }
+
+        .music-controls input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #4299e1;
+            cursor: pointer;
+            box-shadow: 0 0 0 2px #ffffff;
+        }
+
+        .music-controls input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #4299e1;
+            cursor: pointer;
+            box-shadow: 0 0 0 2px #ffffff;
+        }
+
+
+        @media (max-width: 600px) {
+            .game-container {
+                flex-direction: column;
+                width: 98vw;
+                height: 98vh;
+                max-width: none;
+                max-height: none;
+            }
+
+            .game-area {
+                flex-grow: 1;
+                height: calc(100% - 100px);
+                padding-bottom: 0;
+            }
+
+            canvas {
+                height: 100%;
+            }
+
+            .sidebar {
+                width: 100%;
+                height: 140px;
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: space-around;
+                align-items: center;
+                border-left: none;
+                border-top: 1px solid #cbd5e0;
+                padding: 10px 5px;
+                overflow-y: hidden;
+            }
+
+            .sidebar-section {
+                width: 48%;
+                margin-bottom: 10px;
+                border-bottom: none;
+                padding-bottom: 0;
+            }
+
+            .sidebar-button {
+                margin-bottom: 5px;
+                margin-left: 5px;
+                margin-right: 5px;
+                flex-grow: 1;
+                max-width: 150px;
+            }
+            .top-bar {
+                border-bottom-left-radius: 0;
+                border-bottom-right-radius: 0;
+                border-radius: 20px 20px 0 0;
+            }
+            .game-over-overlay {
+                border-radius: 20px 20px 0 0;
+            }
+            .music-controls {
+                flex-direction: row;
+                justify-content: center;
+                align-items: center;
+                width: 100%;
+            }
+            .music-controls button {
+                margin-right: 10px;
+                margin-bottom: 0;
+            }
+            .music-controls input[type="range"] {
+                width: 60%;
+            }
         }
     </style>
 </head>
@@ -241,7 +436,7 @@
             <canvas id="gameCanvas"></canvas>
             <div class="drop-line" id="dropLine"></div>
             <div class="drop-indicator-fruit" id="dropIndicatorFruit"></div>
-            <div class="game-over-line" id="gameOverLine"></div> <!-- Game Over Visual Line -->
+            <div class="game-over-line" id="gameOverLine"></div>
             <div class="game-over-overlay" id="gameOverOverlay">
                 Game Over!
                 <button class="restart-button" id="restartButton">Restart</button>
@@ -249,16 +444,37 @@
         </div>
 
         <div class="sidebar">
-            <button class="sidebar-button" id="makeBombButton">Make Bomb<br><span class="cost">(200 Gold)</span></button>
-            <button class="sidebar-button" id="pickNextButton">Pick Next<br><span class="cost">(100 Gold)</span></button>
-            <button class="sidebar-button" id="popItemsButton">Pop Items<br><span class="cost">(300 Gold)</span></button>
-            <!-- Tilt not implemented as per previous decision -->
-            <!-- <button class="sidebar-button" id="refillTiltsButton">Refill Tilts<br><span class="cost">(75 Gold)</span></button> -->
+            <div class="sidebar-section">
+                <div class="sidebar-title">Power-Ups</div>
+                <button class="sidebar-button" id="makeBombButton">Make Bomb<br><span class="cost">(200 Gold)</span></button>
+                <button class="sidebar-button" id="pickNextButton">Pick Next<br><span class="cost">(100 Gold)</span></button>
+                <button class="sidebar-button" id="popItemsButton">Pop Items<br><span class="cost">(300 Gold)</span></button>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-title">Fruits</div>
+                <div id="fruitList"></div>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-title">Gold</div>
+                <button class="sidebar-button" id="buyGoldButton">Buy Gold</button>
+                <input type="text" id="redeemCodeInput" class="redeem-input" placeholder="Enter code">
+                <button class="sidebar-button" id="redeemCodeButton">Redeem</button>
+                <div id="redeemMessage" class="redeem-message text-sm"></div>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-title">Music</div>
+                <div class="music-controls">
+                    <button id="toggleMusicButton">Play Music</button>
+                    <input type="range" id="musicVolumeSlider" min="-30" max="0" value="-10" step="1">
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
-        // Matter.js aliases
         const Engine = Matter.Engine,
               Render = Matter.Render,
               Runner = Matter.Runner,
@@ -266,19 +482,18 @@
               Composite = Matter.Composite,
               Events = Matter.Events;
 
-        // Game configuration
-        const BASE_CANVAS_WIDTH = 360; // Reference width for fruit scaling
-        const BASE_CANVAS_HEIGHT = 600; // Reference height for fruit scaling
+        const BASE_CANVAS_WIDTH = 360;
+        const BASE_CANVAS_HEIGHT = 600;
         const WALL_THICKNESS = 20;
-        const FRUIT_DROP_Y_RATIO = 0.25; // Y-coordinate where fruits are dropped from (relative to canvas height)
-        const GAME_OVER_Y_RATIO = 0.1; // If fruit center goes above this line (relative to canvas height), game over
+        const FRUIT_DROP_Y_OFFSET = 60;
+        const GAME_OVER_Y_OFFSET = 120;
 
         const FRUIT_TYPES = [
             { name: "Cherry", radius: 15, color: "#ef4444", value: 10, emoji: "🍒" },
-            { name: "Strawberry", radius: 20, color: "#FF4500", value: 20, emoji: "🍓" }, // Changed color
+            { name: "Strawberry", radius: 20, color: "#FF4500", value: 20, emoji: "🍓" },
             { name: "Grape", radius: 25, color: "#8b5cf6", value: 30, emoji: "🍇" },
             { name: "Dekopon", radius: 30, color: "#fb923c", value: 40, emoji: "🍊" },
-            { name: "Orange", radius: 35, color: "#FF8C00", value: 50, emoji: "🥭" },    // Changed color and emoji
+            { name: "Orange", radius: 35, color: "#FF8C00", value: 50, emoji: "🥭" },
             { name: "Apple", radius: 40, color: "#dc2626", value: 60, emoji: "🍎" },
             { name: "Pear", radius: 45, color: "#a3e635", value: 70, emoji: "🍐" },
             { name: "Peach", radius: 50, color: "#fca5a5", value: 80, emoji: "🍑" },
@@ -288,14 +503,14 @@
         ];
 
         const POWER_UP_COSTS = {
-            makeBomb: 200, // Increased cost
-            pickNext: 100, // Increased cost
-            popItems: 300  // Increased cost
+            makeBomb: 200,
+            pickNext: 100,
+            popItems: 300
         };
 
-        let engine = null; // Initialize to null
-        let render = null; // Initialize to null
-        let runner = null; // Initialize to null
+        let engine = null;
+        let render = null;
+        let runner = null;
         let nextFruitTypeIndex = 0;
         let gold = 0;
         let isGameOver = false;
@@ -304,16 +519,16 @@
         let currentCanvasHeight;
         let activePowerUp = null;
 
-        // Tone.js Synths for sound effects
         let dropSynth;
         let mergeSynth;
         let gameOverSynth;
         let powerUpActivateSynth;
         let powerUpUseSynth;
         let errorSynth;
+        let backgroundMusic;
+        let backgroundMusicSynth;
 
-        // DOM elements
-        const gameCanvas = document.getElementById('gameCanvas');
+        let gameCanvas = document.getElementById('gameCanvas');
         const goldElement = document.getElementById('gold');
         const gameOverOverlay = document.getElementById('gameOverOverlay');
         const restartButton = document.getElementById('restartButton');
@@ -321,29 +536,27 @@
         const dropIndicatorFruit = document.getElementById('dropIndicatorFruit');
         const gameContainer = document.querySelector('.game-container');
         const gameOverLine = document.getElementById('gameOverLine');
+        const fruitListContainer = document.getElementById('fruitList');
 
-        // Power-up buttons
         const makeBombButton = document.getElementById('makeBombButton');
         const pickNextButton = document.getElementById('pickNextButton');
         const popItemsButton = document.getElementById('popItemsButton');
+        const buyGoldButton = document.getElementById('buyGoldButton');
+        const redeemCodeInput = document.getElementById('redeemCodeInput');
+        const redeemCodeButton = document.getElementById('redeemCodeButton');
+        const redeemMessage = document.getElementById('redeemMessage');
+        const toggleMusicButton = document.getElementById('toggleMusicButton');
+        const musicVolumeSlider = document.getElementById('musicVolumeSlider');
 
-        /**
-         * Calculates the scaled radius of a fruit based on the current canvas width.
-         * @param {number} index - The index of the fruit type in FRUIT_TYPES.
-         * @returns {number} The scaled radius.
-         */
         function getScaledFruitRadius(index) {
             const baseRadius = FRUIT_TYPES[index].radius;
             return baseRadius * (currentCanvasWidth / BASE_CANVAS_WIDTH);
         }
 
-        /**
-         * Adjusts the canvas size and updates Matter.js renderer dimensions
-         * and game element positions to be responsive.
-         */
         function adjustCanvasSize() {
-            currentCanvasWidth = gameCanvas.clientWidth;
-            currentCanvasHeight = gameCanvas.clientHeight;
+            const gameArea = document.querySelector('.game-area');
+            currentCanvasWidth = gameArea.clientWidth;
+            currentCanvasHeight = gameArea.clientHeight;
 
             gameCanvas.width = currentCanvasWidth;
             gameCanvas.height = currentCanvasHeight;
@@ -360,13 +573,9 @@
 
             updateDropIndicator();
 
-            const gameOverLineY = currentCanvasHeight * GAME_OVER_Y_RATIO;
-            gameOverLine.style.top = `${gameOverLineY}px`;
+            gameOverLine.style.top = `${GAME_OVER_Y_OFFSET}px`;
         }
 
-        /**
-         * Initializes Tone.js synthesizers for various game sound effects.
-         */
         function initAudio() {
             dropSynth = new Tone.PolySynth(Tone.Synth, {
                 oscillator: { type: "triangle" },
@@ -397,19 +606,32 @@
                 oscillator: { type: "sawtooth" },
                 envelope: { attack: 0.001, decay: 0.1, sustain: 0.01, release: 0.1 }
             }).toDestination();
+
+            backgroundMusicSynth = new Tone.PolySynth(Tone.Synth, {
+                oscillator: { type: "sine" },
+                envelope: { attack: 0.5, decay: 1, sustain: 0.8, release: 1 }
+            }).toDestination();
+
+            backgroundMusic = new Tone.Loop(time => {
+                const notes = ["C4", "E4", "G4", "A4"];
+                const note = notes[Math.floor(Math.random() * notes.length)];
+                backgroundMusicSynth.triggerAttackRelease(note, "2n", time);
+            }, "1n").start(0);
+            backgroundMusic.volume.value = -10;
+            backgroundMusic.mute = true;
+
+            musicVolumeSlider.value = backgroundMusic.volume.value;
+            musicVolumeSlider.addEventListener('input', (e) => {
+                backgroundMusic.volume.value = parseFloat(e.target.value);
+            });
         }
 
-        /**
-         * Custom rendering function to draw emojis on top of Matter.js bodies.
-         * This ensures fruits appear as emojis, not just colored circles.
-         * @param {object} event - The Matter.js afterRender event.
-         */
         function drawEmojis(event) {
             const context = render.context;
             const bodies = Composite.allBodies(engine.world);
 
             context.save();
-            context.clearRect(0, 0, currentCanvasWidth, currentCanvasHeight); // Clear canvas each frame
+            context.clearRect(0, 0, currentCanvasWidth, currentCanvasHeight);
 
             for (let i = 0; i < bodies.length; i++) {
                 const body = bodies[i];
@@ -418,18 +640,16 @@
                     const fruitType = FRUIT_TYPES[body.fruitTypeIndex];
                     const scaledRadius = getScaledFruitRadius(body.fruitTypeIndex);
 
-                    // Draw the underlying colored circle (can be transparent if emoji is enough)
                     context.beginPath();
                     context.arc(body.position.x, body.position.y, scaledRadius, 0, 2 * Math.PI);
                     context.fillStyle = body.render.fillStyle;
                     context.fill();
 
-                    // Draw emoji
                     if (fruitType && fruitType.emoji) {
                         context.font = `${scaledRadius * 1.2}px Arial`;
                         context.textAlign = 'center';
                         context.textBaseline = 'middle';
-                        context.fillStyle = '#000000'; // Black color for emoji
+                        context.fillStyle = '#000000';
                         context.fillText(fruitType.emoji, body.position.x, body.position.y);
                     }
                 }
@@ -437,26 +657,29 @@
             context.restore();
         }
 
-        /**
-         * Initializes or re-initializes the game state, Matter.js engine, renderer, and runner.
-         * Cleans up previous instances to prevent memory leaks and duplicate event listeners.
-         */
         function initGame() {
-            // Clean up previous Matter.js instances and event listeners
             if (runner) {
                 Runner.stop(runner);
             }
             if (engine) {
                 Events.off(engine, 'collisionStart', handleCollision);
                 Events.off(engine, 'afterUpdate', checkGameOver);
-                Composite.clear(engine.world); // Clear all bodies from the world
+                Composite.clear(engine.world);
             }
             if (render) {
                 Events.off(render, 'afterRender', drawEmojis);
-                Render.stop(render); // Stop the old render instance
+                Render.stop(render);
+                const gameArea = document.querySelector('.game-area');
+                const oldCanvas = document.getElementById('gameCanvas');
+                if (oldCanvas) {
+                    gameArea.removeChild(oldCanvas);
+                }
+                const newCanvas = document.createElement('canvas');
+                newCanvas.id = 'gameCanvas';
+                gameArea.prepend(newCanvas);
+                gameCanvas = newCanvas;
             }
 
-            // Reset game state variables
             gold = 0;
             isGameOver = false;
             isDropping = false;
@@ -464,8 +687,9 @@
             goldElement.textContent = gold;
             gameOverOverlay.classList.remove('visible');
             updatePowerUpButtons();
+            redeemMessage.textContent = '';
+            redeemCodeInput.value = '';
 
-            // Create new Matter.js engine, renderer, and runner
             engine = Engine.create();
             engine.gravity.y = 1;
 
@@ -483,74 +707,68 @@
 
             runner = Runner.create();
 
-            // Add walls and floor to the new engine's world
             createWalls();
 
-            // Run the renderer and engine
             Render.run(render);
             Runner.run(runner, engine);
 
-            // Add custom rendering for emojis to the new render instance
             Events.on(render, 'afterRender', drawEmojis);
 
-            // Generate the first fruit
             generateNextFruit();
             updateDropIndicator();
 
-            // Add DOM event listeners (ensure they are only added once or properly removed/re-added)
             addEventListeners();
 
-            // Add Matter.js engine event listeners to the NEW engine instance
             Events.on(engine, 'collisionStart', handleCollision);
             Events.on(engine, 'afterUpdate', checkGameOver);
         }
 
-        /**
-         * Creates the static walls and floor for the game area.
-         * Removes any existing walls before creating new ones.
-         */
         function createWalls() {
-            // Remove existing walls to prevent duplicates on resize/restart
-            Composite.remove(engine.world, Composite.allBodies(engine.world).filter(body => body.label === 'wall'));
+            const existingWalls = Composite.allBodies(engine.world).filter(body => body.label === 'wall');
+            Composite.remove(engine.world, existingWalls);
 
             const canvasWidth = gameCanvas.width;
             const canvasHeight = gameCanvas.height;
 
-            // Floor
             Composite.add(engine.world, [
-                Bodies.rectangle(canvasWidth / 2, canvasHeight + WALL_THICKNESS / 2, canvasWidth, WALL_THICKNESS, { isStatic: true, label: 'wall', render: { fillStyle: '#94a3b8' } })
+                Bodies.rectangle(canvasWidth / 2, canvasHeight + WALL_THICKNESS / 2, canvasWidth, WALL_THICKNESS, {
+                    isStatic: true,
+                    label: 'wall',
+                    render: { fillStyle: '#94a3b8' }
+                })
             ]);
 
-            // Walls
             Composite.add(engine.world, [
-                Bodies.rectangle(-WALL_THICKNESS / 2, canvasHeight / 2, WALL_THICKNESS, canvasHeight, { isStatic: true, label: 'wall', render: { fillStyle: '#94a3b8' } }), // Left wall
-                Bodies.rectangle(canvasWidth + WALL_THICKNESS / 2, canvasHeight / 2, WALL_THICKNESS, canvasHeight, { isStatic: true, label: 'wall', render: { fillStyle: '#94a3b8' } })  // Right wall
+                Bodies.rectangle(-WALL_THICKNESS / 2, canvasHeight / 2, WALL_THICKNESS, canvasHeight, {
+                    isStatic: true,
+                    label: 'wall',
+                    render: { fillStyle: '#94a3b8' }
+                }),
+                Bodies.rectangle(canvasWidth + WALL_THICKNESS / 2, canvasHeight / 2, WALL_THICKNESS, canvasHeight, {
+                    isStatic: true,
+                    label: 'wall',
+                    render: { fillStyle: '#94a3b8' }
+                })
             ]);
         }
 
-        /**
-         * Updates the positions of the walls when the canvas is resized.
-         */
         function updateWalls() {
-            createWalls(); // Simply recreate walls based on current canvas size
+            createWalls();
         }
 
-        /**
-         * Generates the next fruit to be dropped. Randomly selects from smaller fruits initially.
-         */
         function generateNextFruit() {
             const currentFruitCount = Composite.allBodies(engine.world).filter(b => b.label === 'fruit').length;
             if (currentFruitCount < 5) {
-                nextFruitTypeIndex = Math.floor(Math.random() * 3); // Cherry, Strawberry, Grape
+                nextFruitTypeIndex = Math.floor(Math.random() * 3);
             } else {
-                nextFruitTypeIndex = Math.floor(Math.random() * Math.min(FRUIT_TYPES.length, 5)); // Random from smaller fruits
+                nextFruitTypeIndex = Math.floor(Math.random() * Math.min(FRUIT_TYPES.length, 5 + Math.floor(currentFruitCount / 10)));
+                if (nextFruitTypeIndex >= FRUIT_TYPES.length) {
+                    nextFruitTypeIndex = FRUIT_TYPES.length - 1;
+                }
             }
             updateDropIndicator();
         }
 
-        /**
-         * Updates the visual indicator (emoji) for the next fruit to be dropped.
-         */
         function updateDropIndicator() {
             const fruitType = FRUIT_TYPES[nextFruitTypeIndex];
             const scaledRadius = getScaledFruitRadius(nextFruitTypeIndex);
@@ -558,13 +776,9 @@
             dropIndicatorFruit.style.height = `${scaledRadius * 2}px`;
             dropIndicatorFruit.style.backgroundColor = fruitType.color;
             dropIndicatorFruit.innerHTML = `<span style="font-size: ${scaledRadius * 1.2}px; line-height: ${scaledRadius * 2}px;">${fruitType.emoji}</span>`;
-            dropIndicatorFruit.style.top = `${currentCanvasHeight * FRUIT_DROP_Y_RATIO - scaledRadius}px`;
+            dropIndicatorFruit.style.top = `${FRUIT_DROP_Y_OFFSET - scaledRadius}px`;
         }
 
-        /**
-         * Drops a fruit (or bomb if power-up is active) at the given x-coordinate.
-         * @param {number} x - The x-coordinate for dropping the fruit.
-         */
         function dropFruit(x) {
             if (isGameOver || isDropping) return;
 
@@ -577,7 +791,7 @@
             const isBomb = (activePowerUp === 'makeBomb');
 
             const dropX = Math.max(scaledRadius, Math.min(currentCanvasWidth - scaledRadius, x));
-            const dropY = currentCanvasHeight * FRUIT_DROP_Y_RATIO;
+            const dropY = FRUIT_DROP_Y_OFFSET;
 
             const fruit = Bodies.circle(dropX, dropY, scaledRadius, {
                 restitution: 0.3,
@@ -608,11 +822,6 @@
             }, 500);
         }
 
-        /**
-         * Handles collisions between bodies in the Matter.js world.
-         * Manages fruit merging and bomb explosions.
-         * @param {object} event - The Matter.js collision event.
-         */
         function handleCollision(event) {
             const pairs = event.pairs;
 
@@ -620,7 +829,10 @@
                 const bodyA = pair.bodyA;
                 const bodyB = pair.bodyB;
 
-                // Handle bomb collision
+                if (bodyA.isRemoving || bodyB.isRemoving) {
+                    return;
+                }
+
                 if (bodyA.label === 'bomb' && bodyB.label === 'fruit') {
                     explodeBomb(bodyA, bodyB);
                     return;
@@ -629,7 +841,6 @@
                     return;
                 }
 
-                // Handle fruit merging
                 if (bodyA.label === 'fruit' && bodyB.label === 'fruit' &&
                     bodyA.fruitTypeIndex === bodyB.fruitTypeIndex &&
                     bodyA.fruitTypeIndex < FRUIT_TYPES.length - 1) {
@@ -675,36 +886,32 @@
             });
         }
 
-        /**
-         * Handles the explosion logic for a bomb. Removes nearby fruits.
-         * @param {object} bombBody - The Matter.js body of the bomb.
-         * @param {object} collidedFruit - The fruit that triggered the bomb (optional, for context).
-         */
         function explodeBomb(bombBody, collidedFruit) {
             if (bombBody.exploded) return;
 
             bombBody.exploded = true;
+            bombBody.isRemoving = true;
             Composite.remove(engine.world, bombBody);
 
             const explosionRadius = bombBody.circleRadius * 3;
+
             const affectedBodies = Composite.allBodies(engine.world).filter(body =>
-                (body.label === 'fruit' || body.label === 'bomb') && // Bomb can affect other bombs too
-                Matter.Vector.magnitude(Matter.Vector.sub(bombBody.position, body.position)) < explosionRadius
+                (body.label === 'fruit' || body.label === 'bomb') &&
+                Matter.Vector.magnitude(Matter.Vector.sub(bombBody.position, body.position)) < explosionRadius &&
+                body.id !== bombBody.id
             );
 
+            affectedBodies.forEach(body => body.isRemoving = true);
             Composite.remove(engine.world, affectedBodies);
 
             if (powerUpUseSynth) powerUpUseSynth.triggerAttackRelease("C5", "0.5s");
         }
 
-        /**
-         * Checks if any fruit has crossed the game over line.
-         */
         function checkGameOver() {
             if (isGameOver) return;
 
             const fruits = Composite.allBodies(engine.world).filter(body => body.label === 'fruit' || body.label === 'bomb');
-            const gameOverLineY = currentCanvasHeight * GAME_OVER_Y_RATIO;
+            const gameOverLineY = GAME_OVER_Y_OFFSET;
 
             for (const fruit of fruits) {
                 if (fruit.position.y - fruit.circleRadius < gameOverLineY) {
@@ -714,30 +921,20 @@
             }
         }
 
-        /**
-         * Ends the game, stops the physics engine, shows the game over overlay, and plays sound.
-         */
         function endGame() {
             isGameOver = true;
             Runner.stop(runner);
             gameOverOverlay.classList.add('visible');
-            removeEventListeners(); // Remove DOM event listeners
+            removeEventListeners();
             if (gameOverSynth) {
                 gameOverSynth.triggerAttackRelease("C3", "1s");
             }
         }
 
-        /**
-         * Restarts the game by re-initializing all game components.
-         */
         function restartGame() {
-            initGame(); // Re-initialize the entire game
+            initGame();
         }
 
-        /**
-         * Activates a selected power-up if the player has enough gold.
-         * @param {string} type - The type of power-up to activate ('makeBomb', 'pickNext', 'popItems').
-         */
         function activatePowerUp(type) {
             if (isGameOver) return;
 
@@ -758,17 +955,11 @@
             if (type === 'pickNext') {
                 nextFruitTypeIndex = (nextFruitTypeIndex + 1) % FRUIT_TYPES.length;
                 generateNextFruit();
-                activePowerUp = null; // Pick Next is a one-time effect
+                activePowerUp = null;
                 if (powerUpUseSynth) powerUpUseSynth.triggerAttackRelease("G5", "8n");
             }
-            // For 'makeBomb' and 'popItems', the power-up is active for the next interaction
         }
 
-        /**
-         * Handles click/tap event when 'popItems' power-up is active.
-         * Removes the clicked fruit and nearby fruits.
-         * @param {Event} e - The pointer event.
-         */
         function handlePopItemsClick(e) {
             if (isGameOver || activePowerUp !== 'popItems') return;
 
@@ -782,13 +973,14 @@
 
             if (clickedBodies.length > 0) {
                 const targetBody = clickedBodies[0];
-                const popRadius = targetBody.circleRadius * 2;
+                const popRadius = targetBody.circleRadius * 2.5;
 
                 const bodiesToRemove = Composite.allBodies(engine.world).filter(body =>
-                    (body.label === 'fruit' || body.label === 'bomb') && // Pop bomb too
+                    (body.label === 'fruit' || body.label === 'bomb') &&
                     Matter.Vector.magnitude(Matter.Vector.sub(targetBody.position, body.position)) < popRadius
                 );
 
+                bodiesToRemove.forEach(body => body.isRemoving = true);
                 Composite.remove(engine.world, bodiesToRemove);
 
                 activePowerUp = null;
@@ -797,10 +989,6 @@
             }
         }
 
-        /**
-         * Updates the visual state (enabled/disabled, highlighted) of power-up buttons
-         * based on current gold and active power-up.
-         */
         function updatePowerUpButtons() {
             makeBombButton.disabled = gold < POWER_UP_COSTS.makeBomb;
             pickNextButton.disabled = gold < POWER_UP_COSTS.pickNext;
@@ -810,14 +998,17 @@
             pickNextButton.classList.toggle('disabled', pickNextButton.disabled);
             popItemsButton.classList.toggle('disabled', popItemsButton.disabled);
 
-            makeBombButton.style.backgroundColor = activePowerUp === 'makeBomb' ? '#f6ad55' : '';
-            popItemsButton.style.backgroundColor = activePowerUp === 'popItems' ? '#f6ad55' : '';
+            makeBombButton.classList.remove('active-power-up');
+            popItemsButton.classList.remove('active-power-up');
+            pickNextButton.classList.remove('active-power-up');
+
+            if (activePowerUp === 'makeBomb') {
+                makeBombButton.classList.add('active-power-up');
+            } else if (activePowerUp === 'popItems') {
+                popItemsButton.classList.add('active-power-up');
+            }
         }
 
-        /**
-         * Updates the position of the drop line and the next fruit indicator.
-         * @param {number} clientX - The clientX coordinate of the pointer.
-         */
         const updateDropPosition = (clientX) => {
             const rect = gameCanvas.getBoundingClientRect();
             let x = clientX - rect.left;
@@ -825,14 +1016,10 @@
             const scaledRadius = getScaledFruitRadius(nextFruitTypeIndex);
             x = Math.max(scaledRadius, Math.min(currentCanvasWidth - scaledRadius, x));
 
-            dropLine.style.left = `${x / currentCanvasWidth * 100}%`;
-            dropIndicatorFruit.style.left = `${x / currentCanvasWidth * 100}%`;
+            dropLine.style.left = `${(x / currentCanvasWidth) * 100}%`;
+            dropIndicatorFruit.style.left = `${(x / currentCanvasWidth) * 100}%`;
         };
 
-        /**
-         * Handles pointer (mouse/touch) movement events.
-         * @param {Event} e - The pointer event.
-         */
         const handlePointerMove = (e) => {
             if (isGameOver) return;
             e.preventDefault();
@@ -840,16 +1027,12 @@
             updateDropPosition(clientX);
         };
 
-        /**
-         * Handles pointer (mouse/touch) down events to drop fruits or activate power-ups.
-         * @param {Event} e - The pointer event.
-         */
         const handlePointerDown = (e) => {
             if (isGameOver) return;
             e.preventDefault();
 
             if (Tone.context.state !== 'running') {
-                Tone.start(); // Resume audio context on first user interaction
+                Tone.start();
             }
 
             if (activePowerUp === 'popItems') {
@@ -862,18 +1045,66 @@
             }
         };
 
-        // Named event handlers for proper removal
         const handleRestartClick = () => restartGame();
         const handleMakeBombClick = () => activatePowerUp('makeBomb');
         const handlePickNextClick = () => activatePowerUp('pickNext');
-        const handlePopItemsButtonClick = () => activatePowerUp('popItems'); // Renamed to avoid conflict
+        const handlePopItemsButtonClick = () => activatePowerUp('popItems');
 
-        /**
-         * Adds all necessary DOM event listeners.
-         */
+        function handleBuyGoldClick() {
+            window.open('https://tally.so/r/3x7Bl5', '_blank');
+        }
+
+        function handleRedeemCode() {
+            const code = redeemCodeInput.value.trim().toUpperCase();
+            let message = '';
+            let amount = 0;
+
+            if (code === 'RAAJ') {
+                amount = 500;
+                message = `Code redeemed! You received ${amount} gold.`;
+                redeemMessage.style.color = '#48bb78';
+            } else if (code === 'TONY') {
+                amount = 5000;
+                message = `Super code redeemed! You received ${amount} gold!`;
+                redeemMessage.style.color = '#48bb78';
+            } else {
+                message = 'Invalid code.';
+                redeemMessage.style.color = '#ef4444';
+            }
+
+            gold += amount;
+            goldElement.textContent = gold;
+            updatePowerUpButtons();
+            redeemMessage.textContent = message;
+            redeemCodeInput.value = '';
+
+            setTimeout(() => {
+                redeeemMessage.textContent = '';
+            }, 3000);
+        }
+
+        function toggleMusic() {
+            if (backgroundMusic.mute) {
+                backgroundMusic.mute = false;
+                toggleMusicButton.textContent = 'Pause Music';
+            } else {
+                backgroundMusic.mute = true;
+                toggleMusicButton.textContent = 'Play Music';
+            }
+        }
+
+        function renderFruitList() {
+            fruitListContainer.innerHTML = '';
+            FRUIT_TYPES.forEach(fruit => {
+                const fruitDiv = document.createElement('div');
+                fruitDiv.classList.add('fruit-list-item');
+                fruitDiv.innerHTML = `<span>${fruit.emoji}</span> ${fruit.name}`;
+                fruitListContainer.appendChild(fruitDiv);
+            });
+        }
+
         function addEventListeners() {
-            // Ensure listeners are not duplicated
-            removeEventListeners(); // Call remove first to be safe
+            removeEventListeners();
 
             gameCanvas.addEventListener('mousemove', handlePointerMove);
             gameCanvas.addEventListener('touchmove', handlePointerMove);
@@ -881,15 +1112,14 @@
             gameCanvas.addEventListener('touchstart', handlePointerDown);
 
             restartButton.addEventListener('click', handleRestartClick);
-
             makeBombButton.addEventListener('click', handleMakeBombClick);
             pickNextButton.addEventListener('click', handlePickNextClick);
             popItemsButton.addEventListener('click', handlePopItemsButtonClick);
+            buyGoldButton.addEventListener('click', handleBuyGoldClick);
+            redeemCodeButton.addEventListener('click', handleRedeemCode);
+            toggleMusicButton.addEventListener('click', toggleMusic);
         }
 
-        /**
-         * Removes all DOM event listeners. Called on game over to prevent interaction.
-         */
         function removeEventListeners() {
             gameCanvas.removeEventListener('mousemove', handlePointerMove);
             gameCanvas.removeEventListener('touchmove', handlePointerMove);
@@ -897,17 +1127,19 @@
             gameCanvas.removeEventListener('touchstart', handlePointerDown);
 
             restartButton.removeEventListener('click', handleRestartClick);
-
             makeBombButton.removeEventListener('click', handleMakeBombClick);
             pickNextButton.removeEventListener('click', handlePickNextClick);
             popItemsButton.removeEventListener('click', handlePopItemsButtonClick);
+            buyGoldButton.removeEventListener('click', handleBuyGoldClick);
+            redeemCodeButton.removeEventListener('click', handleRedeemCode);
+            toggleMusicButton.removeEventListener('click', toggleMusic);
         }
 
-        // Initial setup on window load
         window.onload = function() {
             initAudio();
             adjustCanvasSize();
             initGame();
+            renderFruitList();
             window.addEventListener('resize', () => {
                 adjustCanvasSize();
                 updateWalls();
