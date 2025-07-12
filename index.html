@@ -273,7 +273,7 @@
             <div class="top-bar-item hold-button">Hold</div>
         </div>
 
-        <div class="game-area" id="gameArea"> <!-- Added ID for easier reference in JS -->
+        <div class="game-area" id="gameArea">
             <canvas id="gameCanvas"></canvas>
             <div class="drop-line" id="dropLine"></div>
             <div class="drop-indicator-fruit" id="dropIndicatorFruit"></div>
@@ -305,7 +305,7 @@
         const BASE_CANVAS_WIDTH = 360; // Reference width for fruit scaling
         const BASE_CANVAS_HEIGHT = 600; // Reference height for fruit scaling
         const WALL_THICKNESS = 20;
-        // Adjusted: Fruits drop from a reasonable height, and game over line is near the top
+        // Adjusted: Fruits drop from a reasonable height.
         const FRUIT_DROP_Y_RATIO = 0.15; // Y-coordinate where fruits are dropped from (relative to canvas height)
         const GAME_OVER_Y_RATIO = 0.10; // If fruit center goes above this line (relative to canvas height), game over
         const GAME_OVER_DELAY = 2000; // 2 seconds delay before game over if fruit is above the line
@@ -357,7 +357,7 @@
         const restartButton = document.getElementById('restartButton');
         const dropLine = document.getElementById('dropLine');
         const dropIndicatorFruit = document.getElementById('dropIndicatorFruit');
-        const gameAreaElement = document.getElementById('gameArea'); // Get gameArea by ID
+        const gameAreaElement = document.getElementById('gameArea');
         const gameOverLine = document.getElementById('gameOverLine');
 
         // Power-up buttons
@@ -383,8 +383,8 @@
          */
         function adjustCanvasSize() {
             // Get the actual computed size of the game-area, which the canvas fills
-            currentCanvasWidth = gameAreaElement.clientWidth; // Use gameAreaElement
-            currentCanvasHeight = gameAreaElement.clientHeight; // Use gameAreaElement
+            currentCanvasWidth = gameAreaElement.clientWidth;
+            currentCanvasHeight = gameAreaElement.clientHeight;
 
             gameCanvas.width = currentCanvasWidth;
             gameCanvas.height = currentCanvasHeight;
@@ -502,11 +502,9 @@
                 Composite.clear(engine.world); // Clear all bodies from the world
             }
             if (render) {
-                // Instead of removing canvas, just stop rendering and clear context
                 Events.off(render, 'afterRender', drawEmojis);
                 Render.stop(render);
                 render.context.clearRect(0, 0, render.canvas.width, render.canvas.height); // Clear visual
-                // The render instance will be re-created below, ensuring a fresh renderer for the existing canvas
                 render = null; // Set to null so Render.create will make a new one
             }
 
@@ -576,16 +574,65 @@
 
             const canvasWidth = gameCanvas.width;
             const canvasHeight = gameCanvas.height;
+            const wallColor = '#94a3b8'; // Standard wall color
 
-            // Floor: Positioned at the bottom edge of the canvas, now visually red
-            Composite.add(engine.world, [
-                Bodies.rectangle(canvasWidth / 2, canvasHeight - (WALL_THICKNESS / 2), canvasWidth, WALL_THICKNESS, { isStatic: true, label: 'wall', render: { fillStyle: '#ef4444' } }) // Red color for the base line
-            ]);
+            // Define dimensions for the U-shaped container
+            const boxHeight = 150; // Overall height of the U-shaped box
+            const boxBottomY = canvasHeight - (boxHeight / 2) - 10; // Center Y of the lowest part of the box, slightly above actual bottom
 
-            // Walls: Positioned at the left and right edges of the canvas
+            const baseRectWidth = canvasWidth * 0.6;
+            const baseRectHeight = WALL_THICKNESS;
+            const sideRectLength = boxHeight * 0.8; // Length of the angled sides
+            const sideAngle = Math.PI / 6; // 30 degrees angle
+
+            // 1. Bottom horizontal segment (red base line)
+            const baseRect = Bodies.rectangle(
+                canvasWidth / 2,
+                boxBottomY + (boxHeight / 2) - (baseRectHeight / 2),
+                baseRectWidth,
+                baseRectHeight,
+                { isStatic: true, label: 'wall', render: { fillStyle: '#ef4444' } } // Red color for the base line
+            );
+
+            // 2. Left diagonal segment
+            const leftSideX = (canvasWidth / 2) - (baseRectWidth / 2) - (sideRectLength / 2) * Math.sin(sideAngle);
+            const leftSideY = boxBottomY + (boxHeight / 2) - (baseRectHeight / 2) - (sideRectLength / 2) * Math.cos(sideAngle);
+            const leftSide = Bodies.rectangle(
+                leftSideX,
+                leftSideY,
+                WALL_THICKNESS,
+                sideRectLength,
+                {
+                    isStatic: true,
+                    label: 'wall',
+                    render: { fillStyle: wallColor },
+                    angle: sideAngle
+                }
+            );
+
+            // 3. Right diagonal segment
+            const rightSideX = (canvasWidth / 2) + (baseRectWidth / 2) + (sideRectLength / 2) * Math.sin(sideAngle);
+            const rightSideY = boxBottomY + (boxHeight / 2) - (baseRectHeight / 2) - (sideRectLength / 2) * Math.cos(sideAngle);
+            const rightSide = Bodies.rectangle(
+                rightSideX,
+                rightSideY,
+                WALL_THICKNESS,
+                sideRectLength,
+                {
+                    isStatic: true,
+                    label: 'wall',
+                    render: { fillStyle: wallColor },
+                    angle: -sideAngle
+                }
+            );
+
+            // Add the U-shaped container parts to the world
+            Composite.add(engine.world, [baseRect, leftSide, rightSide]);
+
+            // Add the main left and right vertical walls (these will be outside the U-box)
             Composite.add(engine.world, [
-                Bodies.rectangle(-(WALL_THICKNESS / 2), canvasHeight / 2, WALL_THICKNESS, canvasHeight, { isStatic: true, label: 'wall', render: { fillStyle: '#94a3b8' } }), // Left wall
-                Bodies.rectangle(canvasWidth + (WALL_THICKNESS / 2), canvasHeight / 2, WALL_THICKNESS, canvasHeight, { isStatic: true, label: 'wall', render: { fillStyle: '#94a3b8' } })  // Right wall
+                Bodies.rectangle(-(WALL_THICKNESS / 2), canvasHeight / 2, WALL_THICKNESS, canvasHeight, { isStatic: true, label: 'wall', render: { fillStyle: wallColor } }), // Left wall
+                Bodies.rectangle(canvasWidth + (WALL_THICKNESS / 2), canvasHeight / 2, WALL_THICKNESS, canvasHeight, { isStatic: true, label: 'wall', render: { fillStyle: wallColor } })  // Right wall
             ]);
         }
 
