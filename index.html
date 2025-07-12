@@ -33,7 +33,7 @@
             border-radius: 24px; /* More rounded corners */
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2); /* Deeper shadow */
             display: flex;
-            flex-direction: row;
+            flex-direction: column; /* Changed to column for vertical stacking */
             width: 100%;
             height: 100vh; /* Full height on mobile */
             max-width: 400px; /* Fixed max width for desktop to simulate phone */
@@ -47,7 +47,7 @@
         /* Main game area (canvas and its overlays) */
         .game-area {
             position: relative;
-            flex-grow: 1;
+            flex-grow: 1; /* Takes up available space */
             background: linear-gradient(to bottom, #f0f4f8, #e2e8f0); /* Subtle gradient background */
             border-radius: 16px; /* Rounded corners for game area */
             overflow: hidden;
@@ -68,32 +68,37 @@
             border-radius: 12px; /* Rounded corners for canvas */
         }
 
-        /* Sidebar for controls and power-ups */
+        /* Sidebar for controls and power-ups - now at the bottom */
         .sidebar {
-            width: 120px; /* Slightly wider sidebar */
+            width: 100%; /* Takes full width when stacked vertically */
+            height: 120px; /* Fixed height for the power-up bar */
             background-color: #f8fafc;
-            padding: 15px 10px; /* More vertical padding */
+            padding: 10px;
             display: flex;
-            flex-direction: column;
+            flex-direction: row; /* Buttons arranged horizontally */
+            justify-content: space-around; /* Distribute buttons evenly */
             align-items: center;
-            border-left: 1px solid #cbd5e0;
-            box-shadow: -5px 0 10px rgba(0, 0, 0, 0.05); /* Subtle shadow for sidebar */
+            border-top: 1px solid #cbd5e0; /* Separator line */
+            box-shadow: 0 -5px 10px rgba(0, 0, 0, 0.05); /* Subtle shadow for sidebar */
+            border-bottom-left-radius: 16px; /* Match container bottom radius */
+            border-bottom-right-radius: 16px; /* Match container bottom radius */
         }
 
         .sidebar-button {
             background: linear-gradient(to right, #63b3ed, #4299e1); /* Gradient button */
             color: #ffffff;
-            padding: 10px 8px; /* More padding */
-            margin-bottom: 15px; /* More space between buttons */
+            padding: 8px 10px; /* Adjusted padding for horizontal layout */
+            margin: 0 5px; /* Spacing between buttons */
             border-radius: 12px; /* More rounded */
-            font-size: 0.9rem;
+            font-size: 0.8rem; /* Slightly smaller font for horizontal fit */
             font-weight: bold;
             text-align: center;
             cursor: pointer;
             border: none;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
             transition: all 0.2s ease-in-out; /* Smoother transition */
-            width: 100%;
+            flex-grow: 1; /* Allow buttons to grow and fill space */
+            max-width: 100px; /* Max width for individual buttons */
         }
 
         .sidebar-button:hover:not(.disabled) {
@@ -115,7 +120,7 @@
         }
 
         .sidebar-button .cost {
-            font-size: 0.75rem;
+            font-size: 0.7rem; /* Smaller cost text */
             opacity: 0.9;
             margin-top: 4px;
             display: block;
@@ -300,8 +305,8 @@
         const BASE_CANVAS_WIDTH = 360; // Reference width for fruit scaling
         const BASE_CANVAS_HEIGHT = 600; // Reference height for fruit scaling
         const WALL_THICKNESS = 20;
-        const FRUIT_DROP_Y_RATIO = 0.25; // Y-coordinate where fruits are dropped from (relative to canvas height)
-        const GAME_OVER_Y_RATIO = 0.1; // If fruit center goes above this line (relative to canvas height), game over
+        const FRUIT_DROP_Y_RATIO = 0.2; // Y-coordinate where fruits are dropped from (relative to canvas height) - Made lower for difficulty
+        const GAME_OVER_Y_RATIO = 0.08; // If fruit center goes above this line (relative to canvas height), game over - Made higher for difficulty
 
         const FRUIT_TYPES = [
             { name: "Cherry", radius: 15, color: "#ef4444", value: 10, emoji: "🍒" },
@@ -512,7 +517,7 @@
 
             // Create new Matter.js engine, renderer, and runner
             engine = Engine.create();
-            engine.gravity.y = 1; // Standard gravity
+            engine.gravity.y = 1.2; // Increased gravity for more difficulty
 
             render = Render.create({
                 canvas: gameCanvas,
@@ -589,10 +594,10 @@
             const currentFruitCount = Composite.allBodies(engine.world).filter(b => b.label === 'fruit').length;
             let maxFruitIndex = 2; // Start with Cherry, Strawberry, Grape
 
-            if (currentFruitCount > 5) {
+            if (currentFruitCount > 3) { // Introduce larger fruits earlier for difficulty
                 maxFruitIndex = Math.min(FRUIT_TYPES.length - 1, 4); // Up to Orange/Mango
             }
-            if (currentFruitCount > 10) {
+            if (currentFruitCount > 7) { // Introduce even larger fruits earlier
                 maxFruitIndex = Math.min(FRUIT_TYPES.length - 1, 6); // Up to Pear
             }
             // You can add more conditions to introduce larger fruits as the game progresses
