@@ -307,7 +307,7 @@
         const WALL_THICKNESS = 20;
         // Adjusted: Fruits drop from a reasonable height, and game over line is near the top
         const FRUIT_DROP_Y_RATIO = 0.15; // Y-coordinate where fruits are dropped from (relative to canvas height)
-        const GAME_OVER_Y_RATIO = 0.05; // If fruit center goes above this line (relative to canvas height), game over
+        const GAME_OVER_Y_RATIO = 0.10; // If fruit center goes above this line (relative to canvas height), game over
         const GAME_OVER_DELAY = 2000; // 2 seconds delay before game over if fruit is above the line
 
         const FRUIT_TYPES = [
@@ -506,8 +506,8 @@
                 Events.off(render, 'afterRender', drawEmojis);
                 Render.stop(render);
                 render.context.clearRect(0, 0, render.canvas.width, render.canvas.height); // Clear visual
-                // Do NOT set render = null here if we are reusing the canvas element
                 // The render instance will be re-created below, ensuring a fresh renderer for the existing canvas
+                render = null; // Set to null so Render.create will make a new one
             }
 
             // Reset game state variables
@@ -530,7 +530,6 @@
             engine.gravity.y = 1.8; // Increased gravity further for more difficulty
 
             // Create new Matter.js renderer, using the *existing* gameCanvas element
-            // This ensures the canvas element itself is not removed from the DOM
             render = Render.create({
                 canvas: gameCanvas, // Use the existing canvas element
                 engine: engine,
@@ -578,9 +577,9 @@
             const canvasWidth = gameCanvas.width;
             const canvasHeight = gameCanvas.height;
 
-            // Floor: Positioned at the bottom edge of the canvas
+            // Floor: Positioned at the bottom edge of the canvas, now visually red
             Composite.add(engine.world, [
-                Bodies.rectangle(canvasWidth / 2, canvasHeight - (WALL_THICKNESS / 2), canvasWidth, WALL_THICKNESS, { isStatic: true, label: 'wall', render: { fillStyle: '#94a3b8' } })
+                Bodies.rectangle(canvasWidth / 2, canvasHeight - (WALL_THICKNESS / 2), canvasWidth, WALL_THICKNESS, { isStatic: true, label: 'wall', render: { fillStyle: '#ef4444' } }) // Red color for the base line
             ]);
 
             // Walls: Positioned at the left and right edges of the canvas
