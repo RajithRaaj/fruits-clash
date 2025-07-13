@@ -59,7 +59,7 @@
             position: relative;
             width: 100%;
             flex-grow: 1; /* Allow the game box to expand */
-            background-color: #6495ED; /* Changed to blue color as requested */
+            background-color: #6495ED; /* Blue color as requested */
             border-radius: 16px; /* Rounded corners for the inner game box */
             overflow: hidden; /* Hide overflow from fruits */
             display: flex;
@@ -326,17 +326,18 @@
         const GAME_OVER_Y_OFFSET = 50; // Offset from the top of the *game box* for game over line
 
         const FRUIT_TYPES = [
-            { name: "Cherry", radius: 15, color: "#ef4444", value: 10, emoji: "🍒" },
-            { name: "Strawberry", radius: 20, color: "#FF4500", value: 20, emoji: "🍓" },
-            { name: "Grape", radius: 25, color: "#8b5cf6", value: 30, emoji: "🍇" },
-            { name: "Dekopon", radius: 30, color: "#fb923c", value: 40, emoji: "🍊" },
-            { name: "Orange", radius: 35, color: "#FF8C00", value: 50, emoji: "🥭" },
-            { name: "Apple", radius: 40, color: "#dc2626", value: 60, emoji: "🍎" },
-            { name: "Pear", radius: 45, color: "#a3e635", value: 70, emoji: "🍐" },
-            { name: "Peach", radius: 50, color: "#fca5a5", value: 80, emoji: "🍑" },
-            { name: "Pineapple", radius: 55, color: "#facc15", value: 90, emoji: "🍍" },
-            { name: "Melon", radius: 60, color: "#22c55e", value: 100, emoji: "🍈" },
-            { name: "Watermelon", radius: 65, color: "#be123c", value: 110, emoji: "🍉" }
+            // Increased radii to make balls bigger and game harder
+            { name: "Cherry", radius: 20, color: "#ef4444", value: 10, emoji: "🍒" },
+            { name: "Strawberry", radius: 25, color: "#FF4500", value: 20, emoji: "🍓" },
+            { name: "Grape", radius: 30, color: "#8b5cf6", value: 30, emoji: "🍇" },
+            { name: "Dekopon", radius: 35, color: "#fb923c", value: 40, emoji: "🍊" },
+            { name: "Orange", radius: 40, color: "#FF8C00", value: 50, emoji: "🥭" },
+            { name: "Apple", radius: 45, color: "#dc2626", value: 60, emoji: "🍎" },
+            { name: "Pear", radius: 50, color: "#a3e635", value: 70, emoji: "🍐" },
+            { name: "Peach", radius: 55, color: "#fca5a5", value: 80, emoji: "🍑" },
+            { name: "Pineapple", radius: 60, color: "#facc15", value: 90, emoji: "🍍" },
+            { name: "Melon", radius: 65, color: "#22c55e", value: 100, emoji: "🍈" },
+            { name: "Watermelon", radius: 70, color: "#be123c", value: 110, emoji: "🍉" }
         ];
 
         const POWER_UP_COSTS = {
