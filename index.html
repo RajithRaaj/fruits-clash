@@ -12,118 +12,127 @@
         /* Base styles for full mobile screen and centering */
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #a7e6ff, #d7b3ff); /* Softer, inviting gradient */
+            background: linear-gradient(to bottom right, #a7e0e7, #5c6bc0); /* Softer, appealing gradient */
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
             margin: 0;
             overflow: hidden; /* Prevent body scroll */
-            -webkit-user-select: none; /* Disable text selection on iOS */
-            -moz-user-select: none; /* Disable text selection on Firefox */
-            -ms-user-select: none; /* Disable text selection on IE/Edge */
-            user-select: none; /* Standard disable text selection */
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
             touch-action: none; /* Disable all default touch actions on body */
         }
 
-        /* Game container to mimic a phone's screen size and aspect ratio */
+        /* Game container to mimic the reference game's layout */
         .game-container {
             position: relative;
             background-color: #ffffff;
-            border-radius: 24px; /* More rounded corners */
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2); /* Deeper shadow */
+            border-radius: 20px; /* More rounded corners */
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2); /* Stronger shadow */
             display: flex;
-            flex-direction: column; /* Changed to column for vertical stacking */
+            flex-direction: column; /* Stack main game area and sidebar vertically on small screens */
             width: 100%;
-            height: 100vh; /* Full height on mobile */
-            max-width: 400px; /* Fixed max width for desktop to simulate phone */
-            max-height: 700px; /* Fixed max height for desktop */
+            height: 100vh; /* Full viewport height on mobile */
+            max-width: 450px; /* Max width for desktop to keep it mobile-like */
+            max-height: 800px; /* Max height for desktop */
             box-sizing: border-box;
             overflow: hidden;
-            border: 8px solid #333; /* Phone-like bezel */
-            box-shadow: 0 0 0 8px #333, 0 20px 40px rgba(0,0,0,0.3); /* Bezel + shadow */
         }
 
         /* Main game area (canvas and its overlays) */
         .game-area {
             position: relative;
             flex-grow: 1; /* Takes up available space */
-            background: linear-gradient(to bottom, #f0f4f8, #e2e8f0); /* Subtle gradient background */
-            border-radius: 16px; /* Rounded corners for game area */
-            overflow: hidden;
+            padding: 20px; /* Padding inside the game area to contain the curved box */
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: flex-end;
-            /* Removed padding here to simplify canvas sizing relative to game-area */
-            /* More engaging background pattern */
-            background-image: url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%239BA4B5' fill-opacity='0.1' fill-rule='evenodd'%3E%3Ccircle cx='3' cy='3' r='3'/%3E%3Ccircle cx='13' cy='13' r='3'/%3E%3C/g%3E%3C/svg%3E");
+            justify-content: flex-end; /* Align canvas to bottom within game-area */
+            background-color: #f0f4f8; /* Light gray for outside the game box */
+            z-index: 1; /* Ensure it's behind the top bar initially */
+        }
+
+        .game-box {
+            position: relative;
+            width: 100%;
+            flex-grow: 1; /* Allow the game box to expand */
+            background-color: #e2e8f0; /* Light gray for canvas background */
+            border-radius: 16px; /* Rounded corners for the inner game box */
+            overflow: hidden; /* Hide overflow from fruits */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 4px solid #cbd5e0; /* Border for the game box */
         }
 
         canvas {
             display: block;
-            touch-action: none;
-            width: 100%;
-            height: 100%;
-            border-radius: 12px; /* Rounded corners for canvas */
+            touch-action: none; /* Prevent default touch actions like scrolling/zooming on canvas */
+            width: 100%; /* Canvas fills its parent's width */
+            height: 100%; /* Canvas fills its parent's height */
+            background: transparent; /* Matter.js will draw on it, so transparent HTML background */
         }
 
-        /* Sidebar for controls and power-ups - now at the bottom */
+        /* Sidebar for controls and power-ups */
         .sidebar {
-            width: 100%; /* Takes full width when stacked vertically */
-            height: 120px; /* Fixed height for the power-up bar */
+            width: 100%; /* Full width on mobile */
+            min-height: 80px; /* Minimum height for buttons */
             background-color: #f8fafc;
             padding: 10px;
             display: flex;
-            flex-direction: row; /* Buttons arranged horizontally */
-            justify-content: space-around; /* Distribute buttons evenly */
+            flex-direction: row; /* Arrange buttons horizontally on mobile */
+            justify-content: space-around;
             align-items: center;
             border-top: 1px solid #cbd5e0; /* Separator line */
-            box-shadow: 0 -5px 10px rgba(0, 0, 0, 0.05); /* Subtle shadow for sidebar */
-            border-bottom-left-radius: 16px; /* Match container bottom radius */
-            border-bottom-right-radius: 16px; /* Match container bottom radius */
+            box-sizing: border-box;
+            z-index: 10; /* Ensure sidebar is above game area */
         }
 
         .sidebar-button {
-            background: linear-gradient(to right, #63b3ed, #4299e1); /* Gradient button */
+            background-color: #63b3ed; /* Blue button */
             color: #ffffff;
-            padding: 8px 10px; /* Adjusted padding for horizontal layout */
+            padding: 8px 12px; /* Adjusted padding */
             margin: 0 5px; /* Spacing between buttons */
-            border-radius: 12px; /* More rounded */
-            font-size: 0.8rem; /* Slightly smaller font for horizontal fit */
+            border-radius: 8px;
+            font-size: 0.75rem; /* Smaller font for mobile */
             font-weight: bold;
             text-align: center;
             cursor: pointer;
             border: none;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
-            transition: all 0.2s ease-in-out; /* Smoother transition */
-            flex-grow: 1; /* Allow buttons to grow and fill space */
-            max-width: 100px; /* Max width for individual buttons */
-        }
-
-        .sidebar-button:hover:not(.disabled) {
-            background: linear-gradient(to right, #4299e1, #3182ce); /* Darker gradient on hover */
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-        }
-
-        .sidebar-button:active:not(.disabled) {
-            transform: translateY(0);
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            flex: 1; /* Distribute space equally */
+            white-space: nowrap; /* Prevent text wrapping */
+        }
+
+        .sidebar-button:hover {
+            background-color: #4299e1; /* Darker blue on hover */
+            transform: translateY(-1px);
+        }
+
+        .sidebar-button:active {
+            transform: translateY(0);
         }
 
         .sidebar-button.disabled {
-            background: #a0aec0; /* Gray when disabled */
+            background-color: #a0aec0; /* Gray when disabled */
             cursor: not-allowed;
             opacity: 0.7;
-            box-shadow: none;
+        }
+
+        .sidebar-button.active-powerup {
+            background-color: #f6ad55; /* Orange for active power-up */
+            box-shadow: 0 0 10px rgba(246, 173, 85, 0.8);
         }
 
         .sidebar-button .cost {
-            font-size: 0.7rem; /* Smaller cost text */
-            opacity: 0.9;
-            margin-top: 4px;
-            display: block;
+            font-size: 0.65rem; /* Smaller cost text */
+            opacity: 0.8;
+            display: block; /* Ensure cost is on a new line */
+            margin-top: 2px;
         }
 
         /* Top bar for score and next fruit */
@@ -132,41 +141,29 @@
             top: 0;
             left: 0;
             right: 0;
-            height: 70px; /* Taller top bar */
-            background: linear-gradient(to right, #4a5568, #2d3748); /* Darker, more premium gradient */
+            height: 60px;
+            background-color: #4a5568;
             color: #ffffff;
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: 0 20px;
-            z-index: 15;
-            border-top-left-radius: 16px;
-            border-top-right-radius: 16px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+            z-index: 15; /* Above game area */
+            border-top-left-radius: 20px; /* Match container border */
+            border-top-right-radius: 20px; /* Match container border */
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
 
         .top-bar-item {
             font-weight: bold;
-            font-size: 1.2rem; /* Larger font */
+            font-size: 1.1rem;
             display: flex;
             align-items: center;
-            color: #e2e8f0; /* Slightly off-white for better contrast */
         }
 
         .top-bar-item span {
-            margin-left: 8px; /* More space */
-            color: #fbd38d; /* Gold color for score */
-            font-size: 1.4rem; /* Larger score */
+            margin-left: 5px;
         }
-        
-        .top-bar-item.menu-button, .top-bar-item.hold-button {
-            cursor: pointer;
-            transition: color 0.2s ease;
-        }
-        .top-bar-item.menu-button:hover, .top-bar-item.hold-button:hover {
-            color: #ffffff;
-        }
-
 
         /* Game Over Overlay */
         .game-over-overlay {
@@ -175,112 +172,134 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.85); /* Darker overlay */
+            background-color: rgba(0, 0, 0, 0.7);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            color: #fbd38d; /* Gold color for text */
-            font-size: 3rem; /* Larger font */
+            color: #ffffff;
+            font-size: 2.5rem;
             font-weight: bold;
             text-align: center;
             z-index: 20;
-            border-radius: 16px;
+            border-radius: 16px; /* Match game box */
             opacity: 0;
             visibility: hidden;
-            transition: opacity 0.4s ease-in-out, visibility 0.4s ease-in-out;
-            text-shadow: 0 0 10px rgba(255, 255, 255, 0.3); /* Subtle glow */
+            transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
         }
         .game-over-overlay.visible {
             opacity: 1;
             visibility: visible;
         }
         .restart-button {
-            background: linear-gradient(to right, #48bb78, #38a169); /* Green gradient */
+            background-color: #48bb78;
             color: #ffffff;
-            padding: 14px 28px; /* Larger padding */
+            padding: 12px 24px;
             border-radius: 9999px;
-            font-size: 1.8rem; /* Larger font */
+            font-size: 1.5rem;
             font-weight: bold;
             cursor: pointer;
             border: none;
-            margin-top: 30px; /* More space */
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2), 0 2px 4px rgba(0, 0, 0, 0.1);
-            transition: all 0.2s ease;
+            margin-top: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+            transition: background-color 0.3s ease, transform 0.2s ease;
         }
         .restart-button:hover {
-            background: linear-gradient(to right, #38a169, #2f855a); /* Darker green on hover */
-            transform: translateY(-3px);
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
+            background-color: #38a169;
+            transform: translateY(-2px);
         }
         .restart-button:active {
             transform: translateY(0);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
         }
 
         /* Drop line and indicator for next fruit */
         .drop-line {
             position: absolute;
             top: 0;
-            width: 3px; /* Thicker line */
+            width: 2px;
             height: 100%;
-            background-color: rgba(255, 255, 255, 0.7); /* Brighter line */
-            box-shadow: 0 0 8px rgba(255, 255, 255, 0.5); /* Glow effect */
+            background-color: rgba(255, 255, 255, 0.5); /* White line */
             z-index: 5;
-            pointer-events: none;
+            pointer-events: none; /* Do not block mouse events */
+            transform: translateX(-50%); /* Center the line on the pointer */
         }
         .drop-indicator-fruit {
             position: absolute;
             top: 0; /* Will be set by JS */
             transform: translateX(-50%);
             border-radius: 50%;
-            opacity: 0.8; /* Slightly less opaque */
+            opacity: 0.7;
             pointer-events: none;
             z-index: 6;
-            transition: left 0.08s ease-out; /* Smoother transition for indicator */
+            transition: left 0.05s linear; /* Smooth transition for indicator */
             display: flex;
             justify-content: center;
             align-items: center;
-            border: 2px solid rgba(255, 255, 255, 0.7); /* White border for indicator */
-            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5); /* Glow */
         }
         .drop-indicator-fruit span {
             display: block;
             text-align: center;
-            line-height: 1;
-            filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3)); /* Subtle shadow for emoji */
+            line-height: 1; /* Adjust line-height to center emoji vertically */
         }
 
         /* Game Over Visual Line */
         .game-over-line {
             position: absolute;
-            top: 0; /* Will be set by JS */
+            /* Top will be set by JS relative to game-box */
             left: 0;
             width: 100%;
-            height: 4px; /* Thicker line */
+            height: 3px; /* Slightly thicker */
             background-color: #ef4444; /* Red line */
-            box-shadow: 0 0 15px rgba(239, 68, 68, 0.8); /* Stronger glow */
             z-index: 7;
             pointer-events: none;
+        }
+
+        /* Media query for larger screens to switch sidebar to the right */
+        @media (min-width: 768px) {
+            .game-container {
+                flex-direction: row; /* Arrange main game area and sidebar side-by-side */
+            }
+            .sidebar {
+                width: 120px; /* Fixed width for sidebar on desktop */
+                min-height: auto;
+                flex-direction: column; /* Stack buttons vertically on desktop */
+                justify-content: flex-start;
+                padding: 20px 10px;
+                border-top: none;
+                border-left: 1px solid #cbd5e0; /* Separator line */
+            }
+            .sidebar-button {
+                margin: 0 0 15px 0; /* Spacing between buttons */
+                width: 100%;
+                font-size: 0.9rem;
+            }
+            .sidebar-button .cost {
+                font-size: 0.8rem;
+            }
+            .game-area {
+                padding-top: 80px; /* Make space for the top bar */
+            }
         }
     </style>
 </head>
 <body>
     <div class="game-container">
         <div class="top-bar">
-            <div class="top-bar-item menu-button">Menu</div>
+            <div class="top-bar-item">Menu</div>
             <div class="top-bar-item">Gold: <span id="gold">0</span></div>
-            <div class="top-bar-item hold-button">Hold</div>
+            <div class="top-bar-item">Hold</div>
         </div>
 
-        <div class="game-area" id="gameArea">
-            <canvas id="gameCanvas"></canvas>
-            <div class="drop-line" id="dropLine"></div>
-            <div class="drop-indicator-fruit" id="dropIndicatorFruit"></div>
-            <div class="game-over-line" id="gameOverLine"></div>
-            <div class="game-over-overlay" id="gameOverOverlay">
-                Game Over!
-                <button class="restart-button" id="restartButton">Restart</button>
+        <div class="game-area">
+            <div class="game-box">
+                <canvas id="gameCanvas"></canvas>
+                <div class="drop-line" id="dropLine"></div>
+                <div class="drop-indicator-fruit" id="dropIndicatorFruit"></div>
+                <div class="game-over-line" id="gameOverLine"></div>
+                <div class="game-over-overlay" id="gameOverOverlay">
+                    Game Over!
+                    <button class="restart-button" id="restartButton">Restart</button>
+                </div>
             </div>
         </div>
 
@@ -294,28 +313,24 @@
     <script>
         // Matter.js aliases
         const Engine = Matter.Engine,
-              Render = Matter.Render,
-              Runner = Matter.Runner,
-              Bodies = Matter.Bodies,
-              Composite = Matter.Composite,
-              Events = Matter.Events,
-              Query = Matter.Query;
+            Render = Matter.Render,
+            Runner = Matter.Runner,
+            Bodies = Matter.Bodies,
+            Composite = Matter.Composite,
+            Events = Matter.Events;
 
         // Game configuration
         const BASE_CANVAS_WIDTH = 360; // Reference width for fruit scaling
-        const BASE_CANVAS_HEIGHT = 600; // Reference height for fruit scaling
         const WALL_THICKNESS = 20;
-        // Adjusted: Fruits drop from a reasonable height.
-        const FRUIT_DROP_Y_RATIO = 0.15; // Y-coordinate where fruits are dropped from (relative to canvas height)
-        const GAME_OVER_Y_RATIO = 0.10; // If fruit center goes above this line (relative to canvas height), game over
-        const GAME_OVER_DELAY = 2000; // 2 seconds delay before game over if fruit is above the line
+        const FRUIT_DROP_Y_RATIO = 0.25; // Y-coordinate where fruits are dropped from (relative to canvas height)
+        const GAME_OVER_Y_OFFSET = 50; // Offset from the top of the *game box* for game over line
 
         const FRUIT_TYPES = [
             { name: "Cherry", radius: 15, color: "#ef4444", value: 10, emoji: "🍒" },
-            { name: "Strawberry", radius: 20, color: "#FF6347", value: 20, emoji: "🍓" },
+            { name: "Strawberry", radius: 20, color: "#FF4500", value: 20, emoji: "🍓" },
             { name: "Grape", radius: 25, color: "#8b5cf6", value: 30, emoji: "🍇" },
             { name: "Dekopon", radius: 30, color: "#fb923c", value: 40, emoji: "🍊" },
-            { name: "Orange", radius: 35, color: "#FFA500", value: 50, emoji: "🥭" },
+            { name: "Orange", radius: 35, color: "#FF8C00", value: 50, emoji: "🥭" },
             { name: "Apple", radius: 40, color: "#dc2626", value: 60, emoji: "🍎" },
             { name: "Pear", radius: 45, color: "#a3e635", value: 70, emoji: "🍐" },
             { name: "Peach", radius: 50, color: "#fca5a5", value: 80, emoji: "🍑" },
@@ -339,8 +354,7 @@
         let isDropping = false;
         let currentCanvasWidth;
         let currentCanvasHeight;
-        let activePowerUp = null;
-        let gameOverTimer = null; // Timer for delayed game over
+        let activePowerUp = null; // 'makeBomb', 'popItems', or null
 
         // Tone.js Synths for sound effects
         let dropSynth;
@@ -351,13 +365,13 @@
         let errorSynth;
 
         // DOM elements
-        const gameCanvas = document.getElementById('gameCanvas');
+        let gameCanvas = document.getElementById('gameCanvas'); // Use let as it might be re-created
         const goldElement = document.getElementById('gold');
         const gameOverOverlay = document.getElementById('gameOverOverlay');
         const restartButton = document.getElementById('restartButton');
         const dropLine = document.getElementById('dropLine');
         const dropIndicatorFruit = document.getElementById('dropIndicatorFruit');
-        const gameAreaElement = document.getElementById('gameArea');
+        const gameBox = document.querySelector('.game-box'); // The new curved box
         const gameOverLine = document.getElementById('gameOverLine');
 
         // Power-up buttons
@@ -367,24 +381,23 @@
 
         /**
          * Calculates the scaled radius of a fruit based on the current canvas width.
-         * This ensures fruits maintain relative size regardless of screen dimensions.
          * @param {number} index - The index of the fruit type in FRUIT_TYPES.
          * @returns {number} The scaled radius.
          */
         function getScaledFruitRadius(index) {
             const baseRadius = FRUIT_TYPES[index].radius;
+            // Scale based on current game box width relative to a base width
             return baseRadius * (currentCanvasWidth / BASE_CANVAS_WIDTH);
         }
 
         /**
          * Adjusts the canvas size and updates Matter.js renderer dimensions
-         * and game element positions to be responsive. This function is crucial
-         * for mobile compatibility.
+         * and game element positions to be responsive.
          */
         function adjustCanvasSize() {
-            // Get the actual computed size of the game-area, which the canvas fills
-            currentCanvasWidth = gameAreaElement.clientWidth;
-            currentCanvasHeight = gameAreaElement.clientHeight;
+            // Set canvas dimensions to match its parent (.game-box)
+            currentCanvasWidth = gameBox.clientWidth;
+            currentCanvasHeight = gameBox.clientHeight;
 
             gameCanvas.width = currentCanvasWidth;
             gameCanvas.height = currentCanvasHeight;
@@ -392,29 +405,26 @@
             if (render) {
                 render.options.width = currentCanvasWidth;
                 render.options.height = currentCanvasHeight;
-                // Set pixel ratio for sharper rendering on high-DPI screens
                 Render.setPixelRatio(render, window.devicePixelRatio || 1);
             }
 
-            // Update walls if they exist, or create them if the engine is ready
             if (engine && engine.world.bodies.length > 0) {
                 updateWalls();
-            } else if (engine) { // If engine exists but no bodies (e.g., first init)
-                createWalls();
             }
 
             updateDropIndicator();
 
-            // Position the game over line
-            const gameOverLineY = currentCanvasHeight * GAME_OVER_Y_RATIO;
-            gameOverLine.style.top = `${gameOverLineY}px`;
+            // Position game over line relative to the game box
+            gameOverLine.style.top = `${GAME_OVER_Y_OFFSET}px`;
         }
 
         /**
          * Initializes Tone.js synthesizers for various game sound effects.
-         * Sounds add a crucial layer of feedback to user interactions.
          */
         function initAudio() {
+            // Ensure Tone.js is ready to play
+            Tone.start();
+
             dropSynth = new Tone.PolySynth(Tone.Synth, {
                 oscillator: { type: "triangle" },
                 envelope: { attack: 0.005, decay: 0.1, sustain: 0.05, release: 0.1 }
@@ -449,7 +459,6 @@
         /**
          * Custom rendering function to draw emojis on top of Matter.js bodies.
          * This ensures fruits appear as emojis, not just colored circles.
-         * It clears the canvas and redraws all bodies with their respective emojis.
          * @param {object} event - The Matter.js afterRender event.
          */
         function drawEmojis(event) {
@@ -457,15 +466,26 @@
             const bodies = Composite.allBodies(engine.world);
 
             context.save();
-            context.clearRect(0, 0, currentCanvasWidth, currentCanvasHeight); // Clear canvas each frame
+            // Clear only the part of the canvas where bodies are drawn to allow background to show
+            context.clearRect(0, 0, currentCanvasWidth, currentCanvasHeight);
 
             for (let i = 0; i < bodies.length; i++) {
                 const body = bodies[i];
 
-                // Only draw fruits and bombs (ignore walls)
+                // Skip static walls as they are handled by Matter.js's default render
+                if (body.label === 'wall') {
+                    // We can still draw them if needed, but Matter.js's default render handles their fillStyle
+                    // context.beginPath();
+                    // context.rect(body.bounds.min.x, body.bounds.min.y, body.bounds.max.x - body.bounds.min.x, body.bounds.max.y - body.bounds.min.y);
+                    // context.fillStyle = body.render.fillStyle;
+                    // context.fill();
+                    continue; // Skip custom drawing for walls
+                }
+
+
                 if (body.label === 'fruit' || body.label === 'bomb') {
                     const fruitType = FRUIT_TYPES[body.fruitTypeIndex];
-                    const scaledRadius = body.circleRadius; // Use the actual body radius for drawing
+                    const scaledRadius = body.circleRadius; // Use body's actual radius for rendering
 
                     // Draw the underlying colored circle (can be transparent if emoji is enough)
                     context.beginPath();
@@ -475,8 +495,7 @@
 
                     // Draw emoji
                     if (fruitType && fruitType.emoji) {
-                        // Adjust font size based on scaled radius for consistent emoji size
-                        context.font = `${scaledRadius * 1.2}px 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif`;
+                        context.font = `${scaledRadius * 1.2}px Arial`;
                         context.textAlign = 'center';
                         context.textBaseline = 'middle';
                         context.fillStyle = '#000000'; // Black color for emoji
@@ -503,9 +522,11 @@
             }
             if (render) {
                 Events.off(render, 'afterRender', drawEmojis);
-                Render.stop(render);
-                render.context.clearRect(0, 0, render.canvas.width, render.canvas.height); // Clear visual
-                render = null; // Set to null so Render.create will make a new one
+                Render.stop(render); // Stop the old render instance
+                // Only remove if it's the old canvas, not the initial one
+                if (gameCanvas && gameCanvas.parentNode) {
+                    gameCanvas.parentNode.removeChild(gameCanvas);
+                }
             }
 
             // Reset game state variables
@@ -516,34 +537,36 @@
             goldElement.textContent = gold;
             gameOverOverlay.classList.remove('visible');
             updatePowerUpButtons();
-            
-            // Reset game over timer
-            if (gameOverTimer) {
-                clearTimeout(gameOverTimer);
-                gameOverTimer = null;
+
+            // Create new Matter.js engine, renderer, and runner
+            engine = Engine.create();
+            engine.gravity.y = 1;
+
+            // Re-create the canvas element if it was removed or get the existing one
+            gameCanvas = document.getElementById('gameCanvas');
+            if (!gameCanvas) {
+                gameCanvas = document.createElement('canvas');
+                gameCanvas.id = 'gameCanvas';
+                gameBox.appendChild(gameCanvas); // Append to gameBox
             }
 
-            // Create new Matter.js engine
-            engine = Engine.create();
-            engine.gravity.y = 1.8; // Increased gravity further for more difficulty
 
-            // Create new Matter.js renderer, using the *existing* gameCanvas element
             render = Render.create({
-                canvas: gameCanvas, // Use the existing canvas element
+                canvas: gameCanvas,
                 engine: engine,
                 options: {
-                    width: gameCanvas.width, // These will be updated by adjustCanvasSize
-                    height: gameCanvas.height, // These will be updated by adjustCanvasSize
+                    width: gameCanvas.width, // Will be set by adjustCanvasSize
+                    height: gameCanvas.height, // Will be set by adjustCanvasSize
                     wireframes: false,
-                    background: 'transparent',
+                    background: 'transparent', // Make Matter.js background transparent
                     pixelRatio: window.devicePixelRatio || 1
                 }
             });
 
             runner = Runner.create();
 
-            // Adjust canvas size and create walls (this also calls createWalls())
-            adjustCanvasSize();
+            // Add walls and floor to the new engine's world
+            createWalls();
 
             // Run the renderer and engine
             Render.run(render);
@@ -556,17 +579,17 @@
             generateNextFruit();
             updateDropIndicator();
 
-            // Add DOM event listeners
+            // Add DOM event listeners (ensure they are only added once or properly removed/re-added)
             addEventListeners();
 
             // Add Matter.js engine event listeners to the NEW engine instance
             Events.on(engine, 'collisionStart', handleCollision);
-            Events.on(engine, 'afterUpdate', checkGameOver); // Check game over every frame
+            Events.on(engine, 'afterUpdate', checkGameOver);
         }
 
         /**
          * Creates the static walls and floor for the game area.
-         * Removes any existing walls before creating new ones to avoid duplicates on resize/restart.
+         * Removes any existing walls before creating new ones.
          */
         function createWalls() {
             // Remove existing walls to prevent duplicates on resize/restart
@@ -574,71 +597,21 @@
 
             const canvasWidth = gameCanvas.width;
             const canvasHeight = gameCanvas.height;
-            const wallColor = '#94a3b8'; // Standard wall color
 
-            // Define dimensions for the U-shaped container
-            const boxHeight = 150; // Overall height of the U-shaped box
-            const boxBottomY = canvasHeight - (boxHeight / 2) - 10; // Center Y of the lowest part of the box, slightly above actual bottom
-
-            const baseRectWidth = canvasWidth * 0.6;
-            const baseRectHeight = WALL_THICKNESS;
-            const sideRectLength = boxHeight * 0.8; // Length of the angled sides
-            const sideAngle = Math.PI / 6; // 30 degrees angle
-
-            // 1. Bottom horizontal segment (red base line)
-            const baseRect = Bodies.rectangle(
-                canvasWidth / 2,
-                boxBottomY + (boxHeight / 2) - (baseRectHeight / 2),
-                baseRectWidth,
-                baseRectHeight,
-                { isStatic: true, label: 'wall', render: { fillStyle: '#ef4444' } } // Red color for the base line
-            );
-
-            // 2. Left diagonal segment
-            const leftSideX = (canvasWidth / 2) - (baseRectWidth / 2) - (sideRectLength / 2) * Math.sin(sideAngle);
-            const leftSideY = boxBottomY + (boxHeight / 2) - (baseRectHeight / 2) - (sideRectLength / 2) * Math.cos(sideAngle);
-            const leftSide = Bodies.rectangle(
-                leftSideX,
-                leftSideY,
-                WALL_THICKNESS,
-                sideRectLength,
-                {
-                    isStatic: true,
-                    label: 'wall',
-                    render: { fillStyle: wallColor },
-                    angle: sideAngle
-                }
-            );
-
-            // 3. Right diagonal segment
-            const rightSideX = (canvasWidth / 2) + (baseRectWidth / 2) + (sideRectLength / 2) * Math.sin(sideAngle);
-            const rightSideY = boxBottomY + (boxHeight / 2) - (baseRectHeight / 2) - (sideRectLength / 2) * Math.cos(sideAngle);
-            const rightSide = Bodies.rectangle(
-                rightSideX,
-                rightSideY,
-                WALL_THICKNESS,
-                sideRectLength,
-                {
-                    isStatic: true,
-                    label: 'wall',
-                    render: { fillStyle: wallColor },
-                    angle: -sideAngle
-                }
-            );
-
-            // Add the U-shaped container parts to the world
-            Composite.add(engine.world, [baseRect, leftSide, rightSide]);
-
-            // Add the main left and right vertical walls (these will be outside the U-box)
+            // Floor
             Composite.add(engine.world, [
-                Bodies.rectangle(-(WALL_THICKNESS / 2), canvasHeight / 2, WALL_THICKNESS, canvasHeight, { isStatic: true, label: 'wall', render: { fillStyle: wallColor } }), // Left wall
-                Bodies.rectangle(canvasWidth + (WALL_THICKNESS / 2), canvasHeight / 2, WALL_THICKNESS, canvasHeight, { isStatic: true, label: 'wall', render: { fillStyle: wallColor } })  // Right wall
+                Bodies.rectangle(canvasWidth / 2, canvasHeight + WALL_THICKNESS / 2, canvasWidth, WALL_THICKNESS, { isStatic: true, label: 'wall', render: { fillStyle: '#94a3b8' } })
+            ]);
+
+            // Walls
+            Composite.add(engine.world, [
+                Bodies.rectangle(-WALL_THICKNESS / 2, canvasHeight / 2, WALL_THICKNESS, canvasHeight, { isStatic: true, label: 'wall', render: { fillStyle: '#94a3b8' } }), // Left wall
+                Bodies.rectangle(canvasWidth + WALL_THICKNESS / 2, canvasHeight / 2, WALL_THICKNESS, canvasHeight, { isStatic: true, label: 'wall', render: { fillStyle: '#94a3b8' } })  // Right wall
             ]);
         }
 
         /**
          * Updates the positions of the walls when the canvas is resized.
-         * This is called by adjustCanvasSize.
          */
         function updateWalls() {
             createWalls(); // Simply recreate walls based on current canvas size
@@ -646,28 +619,24 @@
 
         /**
          * Generates the next fruit to be dropped. Randomly selects from smaller fruits initially.
-         * As the game progresses (more fruits on screen), it can introduce slightly larger fruits.
          */
         function generateNextFruit() {
+            // Check current number of fruits to adjust randomness
             const currentFruitCount = Composite.allBodies(engine.world).filter(b => b.label === 'fruit').length;
-            let maxFruitIndex = 2; // Start with Cherry, Strawberry, Grape
 
-            // Difficulty adjustment: introduce larger fruits earlier
-            if (currentFruitCount > 3) {
-                maxFruitIndex = Math.min(FRUIT_TYPES.length - 1, 4); // Up to Dekopon/Orange
+            if (currentFruitCount < 5) {
+                // More likely to get smaller fruits initially
+                nextFruitTypeIndex = Math.floor(Math.random() * 3); // Cherry, Strawberry, Grape
+            } else {
+                // Gradually introduce larger fruits as the game progresses
+                nextFruitTypeIndex = Math.floor(Math.random() * Math.min(FRUIT_TYPES.length, 5 + Math.floor(currentFruitCount / 10)));
+                nextFruitTypeIndex = Math.min(nextFruitTypeIndex, FRUIT_TYPES.length - 1); // Cap at max fruit type
             }
-            if (currentFruitCount > 7) {
-                maxFruitIndex = Math.min(FRUIT_TYPES.length - 1, 6); // Up to Apple/Pear
-            }
-            // Further conditions can be added for even larger fruits
-
-            nextFruitTypeIndex = Math.floor(Math.random() * (maxFruitIndex + 1));
             updateDropIndicator();
         }
 
         /**
          * Updates the visual indicator (emoji) for the next fruit to be dropped.
-         * This helps the player plan their drops.
          */
         function updateDropIndicator() {
             const fruitType = FRUIT_TYPES[nextFruitTypeIndex];
@@ -675,14 +644,13 @@
             dropIndicatorFruit.style.width = `${scaledRadius * 2}px`;
             dropIndicatorFruit.style.height = `${scaledRadius * 2}px`;
             dropIndicatorFruit.style.backgroundColor = fruitType.color;
-            // Use a span inside for better emoji centering and styling
-            dropIndicatorFruit.innerHTML = `<span style="font-size: ${scaledRadius * 1.2}px;">${fruitType.emoji}</span>`;
+            dropIndicatorFruit.innerHTML = `<span style="font-size: ${scaledRadius * 1.2}px; line-height: ${scaledRadius * 2}px;">${fruitType.emoji}</span>`;
+            // Position relative to the game box
             dropIndicatorFruit.style.top = `${currentCanvasHeight * FRUIT_DROP_Y_RATIO - scaledRadius}px`;
         }
 
         /**
          * Drops a fruit (or bomb if power-up is active) at the given x-coordinate.
-         * Prevents dropping if game is over or another fruit is currently being dropped.
          * @param {number} x - The x-coordinate for dropping the fruit.
          */
         function dropFruit(x) {
@@ -696,20 +664,19 @@
 
             const isBomb = (activePowerUp === 'makeBomb');
 
-            // Clamp dropX to stay within canvas bounds, considering fruit radius
+            // Constrain dropX within canvas bounds, accounting for fruit radius
             const dropX = Math.max(scaledRadius, Math.min(currentCanvasWidth - scaledRadius, x));
             const dropY = currentCanvasHeight * FRUIT_DROP_Y_RATIO;
 
             const fruit = Bodies.circle(dropX, dropY, scaledRadius, {
-                restitution: 0.1, // Further reduced bounciness for difficulty
-                friction: 0.8,    // Further increased friction for difficulty
+                restitution: 0.3,
+                friction: 0.5,
                 density: 0.001,
                 label: isBomb ? 'bomb' : 'fruit',
-                collisionFilter: { group: 0 },
+                collisionFilter: { group: 0 }, // Allow all fruits to collide with each other
                 render: { fillStyle: isBomb ? '#ff0000' : fruitColor },
                 fruitTypeIndex: nextFruitTypeIndex,
-                value: fruitValue,
-                merged: false
+                value: fruitValue
             });
 
             Composite.add(engine.world, fruit);
@@ -718,18 +685,16 @@
                 dropSynth.triggerAttackRelease("C4", "8n");
             }
 
-            // If a bomb was dropped, deactivate the power-up
             if (isBomb) {
-                activePowerUp = null;
+                activePowerUp = null; // Deactivate bomb power-up after use
                 updatePowerUpButtons();
                 if (powerUpUseSynth) powerUpUseSynth.triggerAttackRelease("G5", "8n");
             }
 
-            // Short delay before allowing next drop to prevent rapid-fire drops
             setTimeout(() => {
                 isDropping = false;
                 generateNextFruit();
-            }, 500);
+            }, 500); // Small delay before next fruit is ready to drop
         }
 
         /**
@@ -744,51 +709,47 @@
                 const bodyA = pair.bodyA;
                 const bodyB = pair.bodyB;
 
-                // Handle bomb collision: if a bomb hits a fruit, explode the bomb
+                // Handle bomb collision
                 if (bodyA.label === 'bomb' && bodyB.label === 'fruit') {
-                    explodeBomb(bodyA, bodyB);
+                    explodeBomb(bodyA);
+                    Composite.remove(engine.world, bodyB); // Remove the fruit that hit the bomb
                     return;
                 } else if (bodyB.label === 'bomb' && bodyA.label === 'fruit') {
-                    explodeBomb(bodyB, bodyA);
+                    explodeBomb(bodyB);
+                    Composite.remove(engine.world, bodyA); // Remove the fruit that hit the bomb
                     return;
                 }
 
-                // Handle fruit merging: if two identical fruits collide
+                // Handle fruit merging
                 if (bodyA.label === 'fruit' && bodyB.label === 'fruit' &&
                     bodyA.fruitTypeIndex === bodyB.fruitTypeIndex &&
-                    bodyA.fruitTypeIndex < FRUIT_TYPES.length - 1) {
+                    bodyA.fruitTypeIndex < FRUIT_TYPES.length - 1 &&
+                    !bodyA.merged && !bodyB.merged) { // Ensure fruits haven't been merged in this tick
 
-                    // Prevent multiple merges from the same collision event
-                    if (bodyA.merged || bodyB.merged) {
-                        return;
-                    }
-
+                    // Mark fruits as merged to prevent double merging in the same collision tick
                     bodyA.merged = true;
                     bodyB.merged = true;
 
-                    // Remove the two merged fruits
+                    // Remove original fruits
                     Composite.remove(engine.world, [bodyA, bodyB]);
 
-                    // Create the next level fruit
                     const newFruitTypeIndex = bodyA.fruitTypeIndex + 1;
                     const newFruitType = FRUIT_TYPES[newFruitTypeIndex];
                     const newScaledRadius = getScaledFruitRadius(newFruitTypeIndex);
                     const newFruitColor = newFruitType.color;
                     const newFruitValue = newFruitType.value;
 
-                    // Position new fruit at the average position of the two merged fruits
                     const newX = (bodyA.position.x + bodyB.position.x) / 2;
                     const newY = (bodyA.position.y + bodyB.position.y) / 2;
 
                     const newFruit = Bodies.circle(newX, newY, newScaledRadius, {
-                        restitution: 0.1, // Further reduced bounciness for difficulty
-                        friction: 0.8,    // Further increased friction for difficulty
+                        restitution: 0.3,
+                        friction: 0.5,
                         density: 0.001,
                         label: 'fruit',
                         render: { fillStyle: newFruitColor },
                         fruitTypeIndex: newFruitTypeIndex,
-                        value: newFruitValue,
-                        merged: false
+                        value: newFruitValue
                     });
 
                     Composite.add(engine.world, newFruit);
@@ -797,7 +758,6 @@
                         mergeSynth.triggerAttackRelease("E5", "4n");
                     }
 
-                    // Update score and power-up button states
                     gold += newFruitValue;
                     goldElement.textContent = gold;
                     updatePowerUpButtons();
@@ -806,83 +766,41 @@
         }
 
         /**
-         * Handles the explosion logic for a bomb. Removes nearby fruits within an explosion radius.
+         * Handles the explosion logic for a bomb. Removes nearby fruits.
          * @param {object} bombBody - The Matter.js body of the bomb.
          */
         function explodeBomb(bombBody) {
-            if (bombBody.exploded) return;
+            if (bombBody.exploded) return; // Prevent multiple explosions from the same bomb
 
             bombBody.exploded = true;
-            Composite.remove(engine.world, bombBody);
+            Composite.remove(engine.world, bombBody); // Remove the bomb itself
 
-            const explosionRadius = bombBody.circleRadius * 3;
+            const explosionRadius = bombBody.circleRadius * 3; // Explosion radius is 3 times the bomb's size
             const affectedBodies = Composite.allBodies(engine.world).filter(body =>
-                (body.label === 'fruit' || (body.label === 'bomb' && body !== bombBody)) &&
+                (body.label === 'fruit' || body.label === 'bomb') && // Bomb can affect other bombs too
                 Matter.Vector.magnitude(Matter.Vector.sub(bombBody.position, body.position)) < explosionRadius
             );
 
-            // Remove all affected bodies
-            Composite.remove(engine.world, affectedBodies);
+            Composite.remove(engine.world, affectedBodies); // Remove all affected bodies
 
             if (powerUpUseSynth) powerUpUseSynth.triggerAttackRelease("C5", "0.5s");
         }
 
         /**
-         * Implements the 'Pop Items' power-up. When activated and the user clicks,
-         * it removes a small number of the smallest fruits from the game.
-         * @param {Event} e - The pointer event that triggered the pop.
-         */
-        function handlePopItemsClick(e) {
-            const fruits = Composite.allBodies(engine.world).filter(body => body.label === 'fruit');
-
-            // Sort fruits by radius (smallest first)
-            fruits.sort((a, b) => a.circleRadius - b.circleRadius);
-
-            const numToPop = Math.min(fruits.length, 3); // Pop up to 3 smallest fruits
-            const poppedFruits = fruits.slice(0, numToPop);
-
-            if (poppedFruits.length > 0) {
-                Composite.remove(engine.world, poppedFruits);
-                if (powerUpUseSynth) powerUpUseSynth.triggerAttackRelease("D5", "0.3s");
-            } else {
-                if (errorSynth) errorSynth.triggerAttackRelease("C2", "0.2s");
-            }
-
-            activePowerUp = null; // Deactivate power-up after use
-            updatePowerUpButtons();
-        }
-
-        /**
          * Checks if any fruit has crossed the game over line.
-         * This runs on every engine update.
          */
         function checkGameOver() {
             if (isGameOver) return;
 
             const fruits = Composite.allBodies(engine.world).filter(body => body.label === 'fruit' || body.label === 'bomb');
-            const gameOverLineY = currentCanvasHeight * GAME_OVER_Y_RATIO;
-            let fruitAboveLine = false;
+            // The game over line is relative to the top of the *game box*, not the entire canvas height
+            const gameOverLineY = GAME_OVER_Y_OFFSET;
 
             for (const fruit of fruits) {
-                // Check if the top of the fruit (bounds.min.y) is above the game over line
-                if (fruit.bounds.min.y < gameOverLineY) {
-                    fruitAboveLine = true;
+                // Check if the bottom of the fruit is above the game over line
+                if (fruit.position.y - fruit.circleRadius < gameOverLineY) {
+                    endGame();
                     break;
-                }
-            }
-
-            if (fruitAboveLine) {
-                if (!gameOverTimer) {
-                    // Start the timer if a fruit is above the line and timer is not running
-                    gameOverTimer = setTimeout(() => {
-                        endGame();
-                    }, GAME_OVER_DELAY);
-                }
-            } else {
-                // If no fruit is above the line, clear the timer
-                if (gameOverTimer) {
-                    clearTimeout(gameOverTimer);
-                    gameOverTimer = null;
                 }
             }
         }
@@ -894,7 +812,7 @@
             isGameOver = true;
             Runner.stop(runner);
             gameOverOverlay.classList.add('visible');
-            removeEventListeners();
+            removeEventListeners(); // Remove DOM event listeners so no more fruits can be dropped
             if (gameOverSynth) {
                 gameOverSynth.triggerAttackRelease("C3", "1s");
             }
@@ -905,42 +823,7 @@
          */
         function restartGame() {
             initGame();
-        }
-
-        /**
-         * Activates a selected power-up if the player has enough gold.
-         * Plays activation sound or error sound if not enough gold.
-         * @param {string} type - The type of power-up to activate ('makeBomb', 'pickNext', 'popItems').
-         */
-        function activatePowerUp(type) {
-            if (isGameOver) return;
-
-            const cost = POWER_UP_COSTS[type];
-            if (gold < cost) {
-                if (errorSynth) errorSynth.triggerAttackRelease("C2", "0.2s");
-                return;
-            }
-
-            // If a power-up is already active, deactivate it first (e.g., if user clicks 'bomb' then 'pop')
-            if (activePowerUp === type) {
-                activePowerUp = null; // Toggle off if already active
-                if (powerUpActivateSynth) powerUpActivateSynth.triggerAttackRelease("C4", "8n");
-            } else {
-                activePowerUp = type; // Activate the new power-up
-                gold -= cost; // Deduct cost only on activation
-                goldElement.textContent = gold;
-                if (powerUpActivateSynth) powerUpActivateSynth.triggerAttackRelease("G4", "8n");
-            }
-            
-            updatePowerUpButtons();
-
-            // 'Pick Next' is an immediate effect, not a persistent active state
-            if (type === 'pickNext' && activePowerUp !== 'pickNext') {
-                nextFruitTypeIndex = (nextFruitTypeIndex + 1) % FRUIT_TYPES.length;
-                generateNextFruit();
-                activePowerUp = null;
-                if (powerUpUseSynth) powerUpUseSynth.triggerAttackRelease("G5", "8n");
-            }
+            adjustCanvasSize(); // Ensure canvas is correctly sized after re-init
         }
 
         /**
@@ -948,34 +831,88 @@
          * based on current gold and active power-up.
          */
         function updatePowerUpButtons() {
-            makeBombButton.disabled = gold < POWER_UP_COSTS.makeBomb;
-            pickNextButton.disabled = gold < POWER_UP_COSTS.pickNext;
-            popItemsButton.disabled = gold < POWER_UP_COSTS.popItems;
+            makeBombButton.disabled = gold < POWER_UP_COSTS.makeBomb || activePowerUp !== null;
+            pickNextButton.disabled = gold < POWER_UP_COSTS.pickNext || activePowerUp !== null;
+            popItemsButton.disabled = gold < POWER_UP_COSTS.popItems || activePowerUp !== null;
 
             makeBombButton.classList.toggle('disabled', makeBombButton.disabled);
             pickNextButton.classList.toggle('disabled', pickNextButton.disabled);
             popItemsButton.classList.toggle('disabled', popItemsButton.disabled);
 
-            // Highlight active power-up button
-            makeBombButton.style.backgroundColor = activePowerUp === 'makeBomb' ? '#f6ad55' : '';
-            popItemsButton.style.backgroundColor = activePowerUp === 'popItems' ? '#f6ad55' : '';
+            // Add/remove active class for the currently selected power-up
+            makeBombButton.classList.toggle('active-powerup', activePowerUp === 'makeBomb');
+            popItemsButton.classList.toggle('active-powerup', activePowerUp === 'popItems');
+            // PickNext is not a persistent active state, so no active-powerup class for it
         }
 
         /**
-         * Updates the position of the drop line and the next fruit indicator
-         * based on the pointer's X coordinate.
-         * @param {number} clientX - The clientX coordinate of the pointer.
+         * Activates a specified power-up, if enough gold is available and no other power-up is active.
+         * @param {string} powerUpType - The type of power-up to activate ('makeBomb', 'pickNext', 'popItems').
          */
-        const updateDropPosition = (clientX) => {
+        function activatePowerUp(powerUpType) {
+            if (isGameOver) return; // Cannot activate power-ups if game is over
+
+            const cost = POWER_UP_COSTS[powerUpType];
+
+            if (gold >= cost) {
+                if (activePowerUp === powerUpType) { // Deactivate if already active
+                    activePowerUp = null;
+                    if (powerUpUseSynth) powerUpUseSynth.triggerAttackRelease("D3", "8n"); // Deactivation sound
+                } else if (activePowerUp === null) { // Activate if nothing is active
+                    gold -= cost;
+                    goldElement.textContent = gold;
+                    activePowerUp = powerUpType;
+                    if (powerUpActivateSynth) powerUpActivateSynth.triggerAttackRelease("C5", "8n");
+
+                    // Handle one-time use power-ups immediately
+                    if (powerUpType === 'pickNext') {
+                        nextFruitTypeIndex = (nextFruitTypeIndex + 1) % FRUIT_TYPES.length; // Cycle to next fruit
+                        updateDropIndicator();
+                        activePowerUp = null; // Deactivate immediately after use
+                        if (powerUpUseSynth) powerUpUseSynth.triggerAttackRelease("D5", "8n");
+                    }
+                } else {
+                    if (errorSynth) errorSynth.triggerAttackRelease("C2", "16n"); // Another power-up is active
+                }
+            } else {
+                if (errorSynth) errorSynth.triggerAttackRelease("C2", "16n"); // Not enough gold
+            }
+            updatePowerUpButtons();
+        }
+
+        /**
+         * Handles click event when 'Pop Items' power-up is active.
+         * Removes the closest fruit to the click point.
+         * @param {PointerEvent} e - The pointer event.
+         */
+        const handlePopItemsClick = (e) => {
             const rect = gameCanvas.getBoundingClientRect();
-            let x = clientX - rect.left;
+            const clickPoint = {
+                x: (e.touches ? e.touches[0].clientX : e.clientX) - rect.left,
+                y: (e.touches ? e.touches[0].clientY : e.clientY) - rect.top
+            };
 
-            const scaledRadius = getScaledFruitRadius(nextFruitTypeIndex);
-            // Clamp x to prevent indicator from going outside canvas walls
-            x = Math.max(scaledRadius, Math.min(currentCanvasWidth - scaledRadius, x));
+            const fruits = Composite.allBodies(engine.world).filter(body => body.label === 'fruit' || body.label === 'bomb');
 
-            dropLine.style.left = `${x}px`;
-            dropIndicatorFruit.style.left = `${x}px`;
+            let closestFruit = null;
+            let minDistance = Infinity;
+
+            for (const fruit of fruits) {
+                const distance = Matter.Vector.magnitude(Matter.Vector.sub(clickPoint, fruit.position));
+                if (distance < minDistance && distance < fruit.circleRadius) { // Only consider clicks within the fruit's radius
+                    minDistance = distance;
+                    closestFruit = fruit;
+                }
+            }
+
+            if (closestFruit) {
+                Composite.remove(engine.world, closestFruit);
+                activePowerUp = null; // Deactivate 'popItems' after use
+                updatePowerUpButtons();
+                if (powerUpUseSynth) powerUpUseSynth.triggerAttackRelease("A4", "8n");
+            } else {
+                if (errorSynth) errorSynth.triggerAttackRelease("C2", "16n"); // No fruit clicked
+            }
         };
 
         /**
@@ -998,7 +935,7 @@
             e.preventDefault();
 
             if (Tone.context.state !== 'running') {
-                Tone.start();
+                Tone.start(); // Resume audio context on first user interaction
             }
 
             if (activePowerUp === 'popItems') {
@@ -1011,29 +948,48 @@
             }
         };
 
-        // Named event handlers for proper removal and re-addition
+        /**
+         * Updates the position of the drop line and the next fruit indicator.
+         * @param {number} clientX - The clientX coordinate of the pointer.
+         */
+        const updateDropPosition = (clientX) => {
+            const rect = gameCanvas.getBoundingClientRect();
+            let x = clientX - rect.left;
+
+            const scaledRadius = getScaledFruitRadius(nextFruitTypeIndex);
+            // Constrain the indicator and drop line to stay within the game box
+            x = Math.max(scaledRadius, Math.min(currentCanvasWidth - scaledRadius, x));
+
+            // Position using percentage for responsiveness
+            dropLine.style.left = `${(x / currentCanvasWidth) * 100}%`;
+            dropIndicatorFruit.style.left = `${(x / currentCanvasWidth) * 100}%`;
+        };
+
+        // Named event handlers for proper removal
         const handleRestartClick = () => restartGame();
-        const handleMakeBombClick = () => activatePowerUp('makeBomb');
-        const handlePickNextClick = () => activatePowerUp('pickNext');
+        const handleMakeBombButtonClick = () => activatePowerUp('makeBomb');
+        const handlePickNextButtonClick = () => activatePowerUp('pickNext');
         const handlePopItemsButtonClick = () => activatePowerUp('popItems');
 
         /**
          * Adds all necessary DOM event listeners.
-         * Ensures listeners are not duplicated by calling remove first.
          */
         function addEventListeners() {
+            // Remove previous listeners to prevent duplicates
             removeEventListeners();
 
             gameCanvas.addEventListener('mousemove', handlePointerMove);
-            gameCanvas.addEventListener('touchmove', handlePointerMove, { passive: false });
+            gameCanvas.addEventListener('touchmove', handlePointerMove, { passive: false }); // passive: false for preventDefault
             gameCanvas.addEventListener('mousedown', handlePointerDown);
-            gameCanvas.addEventListener('touchstart', handlePointerDown, { passive: false });
+            gameCanvas.addEventListener('touchstart', handlePointerDown, { passive: false }); // passive: false for preventDefault
 
             restartButton.addEventListener('click', handleRestartClick);
 
-            makeBombButton.addEventListener('click', handleMakeBombClick);
-            pickNextButton.addEventListener('click', handlePickNextClick);
+            makeBombButton.addEventListener('click', handleMakeBombButtonClick);
+            pickNextButton.addEventListener('click', handlePickNextButtonClick);
             popItemsButton.addEventListener('click', handlePopItemsButtonClick);
+
+            window.addEventListener('resize', adjustCanvasSize);
         }
 
         /**
@@ -1047,20 +1003,18 @@
 
             restartButton.removeEventListener('click', handleRestartClick);
 
-            makeBombButton.removeEventListener('click', handleMakeBombClick);
-            pickNextButton.removeEventListener('click', handlePickNextClick);
+            makeBombButton.removeEventListener('click', handleMakeBombButtonClick);
+            pickNextButton.removeEventListener('click', handlePickNextButtonClick);
             popItemsButton.removeEventListener('click', handlePopItemsButtonClick);
+
+            window.removeEventListener('resize', adjustCanvasSize); // Remove window resize listener
         }
 
         // Initial setup on window load
         window.onload = function() {
-            initAudio();
-            adjustCanvasSize();
-            initGame();
-
-            window.addEventListener('resize', () => {
-                adjustCanvasSize();
-            });
+            initAudio(); // Initialize audio context and synths
+            adjustCanvasSize(); // Set initial canvas size based on container
+            initGame(); // Start the game for the first time
         };
     </script>
 </body>
