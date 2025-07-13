@@ -59,7 +59,7 @@
             position: relative;
             width: 100%;
             flex-grow: 1; /* Allow the game box to expand */
-            background-color: #e2e8f0; /* Light gray for canvas background */
+            background-color: #6495ED; /* Changed to blue color as requested */
             border-radius: 16px; /* Rounded corners for the inner game box */
             overflow: hidden; /* Hide overflow from fruits */
             display: flex;
@@ -822,6 +822,7 @@
          * Restarts the game by re-initializing all game components.
          */
         function restartGame() {
+            console.log("Restart button clicked!"); // Added for debugging
             initGame();
             adjustCanvasSize(); // Ensure canvas is correctly sized after re-init
         }
